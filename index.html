@@ -3,113 +3,57 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Demo — Exercício + Mapa Muscular</title>
+<title>Demo — Mapa Muscular (body-highlighter)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#12141a;
-    --card:#1b1e27;
-    --border:#2a2e3a;
-    --text:#eef0f4;
-    --muted:#9aa0ae;
-    --accent:#ff5a3c;
-    --muscle-off:#3a3f4d;
-    --muscle-primary:#ff5a3c;
-    --muscle-secondary:#ffb03c;
+    --bg:#F7F5F1;
+    --surface:#FFFFFF;
+    --ink:#1F1D1B;
+    --muted:#8A8378;
+    --accent:#C9482F;
+    --accent-soft:#E7B8A9;
+    --border:#D8D3C8;
+    --olive:#3D5A4C;
+    --olive-soft:#DCE4DE;
   }
   *{box-sizing:border-box;}
   body{
     margin:0;
     background:var(--bg);
-    color:var(--text);
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
-    padding:24px 16px 60px;
-  }
-  h1{
-    font-size:20px;
-    margin:0 0 4px;
-  }
-  .subtitle{
-    color:var(--muted);
-    font-size:14px;
-    margin:0 0 24px;
-  }
-  .exercise-list{
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    padding:32px 16px 60px;
     display:flex;
-    gap:10px;
-    flex-wrap:wrap;
-    margin-bottom:24px;
+    justify-content:center;
   }
+  .wrap{width:100%;max-width:420px;}
+  h1{font-family:'Fraunces',serif;font-size:22px;font-weight:500;margin:0 0 4px;}
+  .sub{color:var(--muted);font-size:13px;margin:0 0 24px;}
+
+  .exercise-list{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;}
   .ex-btn{
-    background:var(--card);
+    background:var(--surface);
     border:1px solid var(--border);
-    color:var(--text);
-    padding:10px 16px;
+    color:var(--ink);
+    padding:9px 14px;
     border-radius:999px;
-    font-size:14px;
-    cursor:pointer;
-    transition:all .15s;
-  }
-  .ex-btn:hover{border-color:var(--accent);}
-  .ex-btn.active{
-    background:var(--accent);
-    border-color:var(--accent);
-    color:#161311;
-    font-weight:600;
-  }
-  .panel{
-    display:grid;
-    grid-template-columns:1fr;
-    gap:16px;
-  }
-  @media(min-width:720px){
-    .panel{grid-template-columns:1fr 1fr;}
-  }
-  .card{
-    background:var(--card);
-    border:1px solid var(--border);
-    border-radius:16px;
-    padding:16px;
-  }
-  .card h2{
-    font-size:15px;
-    margin:0 0 12px;
-    color:var(--muted);
-    font-weight:600;
-    text-transform:uppercase;
-    letter-spacing:.04em;
-  }
-  .ex-photo{
-    width:100%;
-    border-radius:10px;
-    display:block;
-    background:#000;
-    aspect-ratio:1/1;
-    object-fit:cover;
-  }
-  .ex-meta{
-    margin-top:12px;
     font-size:13px;
-    color:var(--muted);
-    line-height:1.5;
+    cursor:pointer;
   }
-  .ex-meta b{color:var(--text);}
-  .tag{
-    display:inline-block;
-    background:#252a35;
-    border-radius:6px;
-    padding:2px 8px;
-    font-size:12px;
-    margin-right:6px;
-    margin-top:6px;
+  .ex-btn.active{background:var(--ink);color:var(--bg);border-color:var(--ink);}
+
+  .card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:20px;
+    padding:20px;
   }
-  .body-toggle{
-    display:flex;
-    gap:8px;
-    margin-bottom:12px;
-  }
-  .body-toggle button{
+  .view-toggle{display:flex;gap:8px;margin-bottom:16px;}
+  .view-toggle button{
     flex:1;
-    background:#12141a;
+    background:var(--bg);
     border:1px solid var(--border);
     color:var(--muted);
     padding:8px;
@@ -117,265 +61,119 @@
     font-size:13px;
     cursor:pointer;
   }
-  .body-toggle button.active{
-    color:var(--text);
-    border-color:var(--accent);
-  }
-  svg.body-map{
-    width:100%;
-    max-width:220px;
-    display:block;
-    margin:0 auto;
-  }
-  .muscle{
-    fill:var(--muscle-off);
-    stroke:#12141a;
-    stroke-width:1.5;
-    transition:fill .25s;
-  }
-  .muscle.primary{fill:var(--muscle-primary);}
-  .muscle.secondary{fill:var(--muscle-secondary);}
-  .skin{fill:#252a35;stroke:#12141a;stroke-width:1.5;}
-  .legend{
-    display:flex;
-    gap:16px;
-    justify-content:center;
-    margin-top:14px;
-    font-size:12px;
-    color:var(--muted);
-  }
+  .view-toggle button.active{color:var(--ink);border-color:var(--accent);}
+
+  #model{display:flex;justify-content:center;min-height:280px;}
+
+  .legend{display:flex;gap:16px;justify-content:center;margin-top:8px;font-size:12px;color:var(--muted);}
   .legend span{display:flex;align-items:center;gap:6px;}
   .dot{width:10px;height:10px;border-radius:50%;display:inline-block;}
-  .dot.primary{background:var(--muscle-primary);}
-  .dot.secondary{background:var(--muscle-secondary);}
-  .note{
-    font-size:12px;
-    color:var(--muted);
-    margin-top:24px;
-    line-height:1.5;
-  }
+  .dot.primary{background:var(--accent);}
+  .dot.secondary{background:var(--accent-soft);}
+
+  .note{font-size:12px;color:var(--muted);margin-top:20px;line-height:1.5;}
 </style>
 </head>
 <body>
-
-  <h1>Demo — Ficha do Exercício</h1>
-  <p class="subtitle">Clique num exercício para ver a foto do movimento e o mapa muscular destacado</p>
+<div class="wrap">
+  <h1>Mapa Muscular</h1>
+  <p class="sub">Usando a lib open source <b>body-highlighter</b> (MIT)</p>
 
   <div class="exercise-list" id="exerciseList"></div>
 
-  <div class="panel">
-    <div class="card">
-      <h2>Movimento</h2>
-      <img id="exPhoto" class="ex-photo" src="" alt="">
-      <div class="ex-meta" id="exMeta"></div>
+  <div class="card">
+    <div class="view-toggle">
+      <button id="btnFront" class="active">Frente</button>
+      <button id="btnBack">Costas</button>
     </div>
-
-    <div class="card">
-      <h2>Mapa muscular</h2>
-      <div class="body-toggle">
-        <button id="btnFront" class="active">Frente</button>
-        <button id="btnBack">Costas</button>
-      </div>
-      <div id="bodyContainer"></div>
-      <div class="legend">
-        <span><i class="dot primary"></i>Músculo principal</span>
-        <span><i class="dot secondary"></i>Músculo secundário</span>
-      </div>
+    <div id="model"></div>
+    <div class="legend">
+      <span><i class="dot primary"></i>Principal</span>
+      <span><i class="dot secondary"></i>Secundário</span>
     </div>
   </div>
 
-  <p class="note">
-    Fotos e dados via <b>free-exercise-db</b> (domínio público). Mapa muscular é um SVG genérico próprio,
-    reaproveitado para todos os exercícios — só muda a cor conforme o primaryMuscles/secondaryMuscles de cada um.
-  </p>
+  <p class="note">Biblioteca MIT license, sem dependência de framework — importada aqui via CDN (esm.sh) só pra essa demo rodar direto no navegador sem passo de build.</p>
+</div>
 
-<script>
-// ---------- Dados de exemplo (formato baseado no free-exercise-db) ----------
-const IMG_BASE = "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/";
+<script type="module">
+import createBodyHighlighter from 'https://esm.sh/body-highlighter';
 
 const exercises = [
   {
-    id: "Barbell_Bench_Press_-_Medium_Grip",
-    nome: "Supino Reto com Barra",
-    equipamento: "Barra",
-    nivel: "Intermediário",
-    primaryMuscles: ["chest"],
-    secondaryMuscles: ["shoulders", "triceps"],
-    image: IMG_BASE + "Barbell_Bench_Press_-_Medium_Grip/0.jpg"
+    nome: "Supino Reto",
+    primary: ["chest"],
+    secondary: ["front-deltoids", "triceps"]
   },
   {
-    id: "Bent_Over_Barbell_Row",
-    nome: "Remada Curvada com Barra",
-    equipamento: "Barra",
-    nivel: "Intermediário",
-    primaryMuscles: ["middle back"],
-    secondaryMuscles: ["biceps", "lats", "shoulders"],
-    image: IMG_BASE + "Bent_Over_Barbell_Row/0.jpg"
+    nome: "Remada Curvada",
+    primary: ["upper-back"],
+    secondary: ["biceps", "back-deltoids"]
   },
   {
-    id: "Barbell_Full_Squat",
-    nome: "Agachamento Livre com Barra",
-    equipamento: "Barra",
-    nivel: "Intermediário",
-    primaryMuscles: ["quadriceps"],
-    secondaryMuscles: ["glutes", "hamstrings", "lower back"],
-    image: IMG_BASE + "Barbell_Full_Squat/0.jpg"
+    nome: "Agachamento Livre",
+    primary: ["quadriceps"],
+    secondary: ["gluteal", "hamstring"]
   }
 ];
 
-// Traduções simples pra exibir os nomes dos músculos em PT
-const muscleLabels = {
-  chest: "Peitoral", shoulders: "Ombro", triceps: "Tríceps", biceps: "Bíceps",
-  "middle back": "Costas (meio)", lats: "Dorsal", quadriceps: "Quadríceps",
-  glutes: "Glúteo", hamstrings: "Posterior de coxa", "lower back": "Lombar",
-  abdominals: "Abdômen", calves: "Panturrilha", forearms: "Antebraço", traps: "Trapézio"
-};
+const backMuscles = ["trapezius","upper-back","lower-back","triceps","back-deltoids","gluteal","hamstring"];
 
-// Mapeia nome do músculo (dataset) -> id do <path>/<ellipse> no SVG genérico
-// "front" ou "back" indica em qual mapa aquele músculo aparece
-const muscleToShape = {
-  chest:        { view: "front", shape: "chest" },
-  shoulders:    { view: "front", shape: "shoulders" },
-  biceps:       { view: "front", shape: "biceps" },
-  abdominals:   { view: "front", shape: "abs" },
-  quadriceps:   { view: "front", shape: "quads" },
-  forearms:     { view: "front", shape: "forearms" },
-  triceps:      { view: "back",  shape: "triceps" },
-  "middle back":{ view: "back",  shape: "lats" },
-  lats:         { view: "back",  shape: "lats" },
-  "lower back": { view: "back",  shape: "lowerback" },
-  glutes:       { view: "back",  shape: "glutes" },
-  hamstrings:   { view: "back",  shape: "hamstrings" },
-  traps:        { view: "back",  shape: "traps" },
-  calves:       { view: "back",  shape: "calves" }
-};
-
-// ---------- SVGs genéricos (frente / costas) ----------
-const bodyFrontSVG = `
-<svg class="body-map" viewBox="0 0 200 400" xmlns="http://www.w3.org/2000/svg">
-  <circle class="skin" cx="100" cy="35" r="26"/>
-  <path class="skin" d="M70 60 Q100 50 130 60 L138 190 Q100 205 62 190 Z"/>
-  <path class="skin" d="M62 75 L30 170 Q28 185 40 190 L55 185 L70 100 Z"/>
-  <path class="skin" d="M138 75 L170 170 Q172 185 160 190 L145 185 L130 100 Z"/>
-  <path class="skin" d="M70 190 L60 340 Q60 350 75 350 L88 350 L95 210 Z"/>
-  <path class="skin" d="M130 190 L140 340 Q140 350 125 350 L112 350 L105 210 Z"/>
-
-  <path id="shape-chest" class="muscle" d="M75 70 Q100 62 125 70 L120 105 Q100 115 80 105 Z"/>
-  <ellipse id="shape-shoulders" class="muscle" cx="65" cy="72" rx="14" ry="16"/>
-  <ellipse id="shape-shoulders" class="muscle" cx="135" cy="72" rx="14" ry="16"/>
-  <path id="shape-abs" class="muscle" d="M82 108 L118 108 L114 175 Q100 182 86 175 Z"/>
-  <ellipse id="shape-biceps" class="muscle" cx="45" cy="115" rx="11" ry="24"/>
-  <ellipse id="shape-biceps" class="muscle" cx="155" cy="115" rx="11" ry="24"/>
-  <rect id="shape-forearms" class="muscle" x="35" y="145" width="18" height="35" rx="8"/>
-  <rect id="shape-forearms" class="muscle" x="147" y="145" width="18" height="35" rx="8"/>
-  <path id="shape-quads" class="muscle" d="M63 200 L96 208 L90 330 L68 330 Z"/>
-  <path id="shape-quads" class="muscle" d="M137 200 L104 208 L110 330 L132 330 Z"/>
-</svg>`;
-
-const bodyBackSVG = `
-<svg class="body-map" viewBox="0 0 200 400" xmlns="http://www.w3.org/2000/svg">
-  <circle class="skin" cx="100" cy="35" r="26"/>
-  <path class="skin" d="M70 60 Q100 50 130 60 L138 190 Q100 205 62 190 Z"/>
-  <path class="skin" d="M62 75 L30 170 Q28 185 40 190 L55 185 L70 100 Z"/>
-  <path class="skin" d="M138 75 L170 170 Q172 185 160 190 L145 185 L130 100 Z"/>
-  <path class="skin" d="M70 190 L60 340 Q60 350 75 350 L88 350 L95 210 Z"/>
-  <path class="skin" d="M130 190 L140 340 Q140 350 125 350 L112 350 L105 210 Z"/>
-
-  <path id="shape-traps" class="muscle" d="M78 60 Q100 55 122 60 L114 90 L86 90 Z"/>
-  <path id="shape-lats" class="muscle" d="M75 92 L125 92 L120 150 Q100 160 80 150 Z"/>
-  <path id="shape-lowerback" class="muscle" d="M83 152 L117 152 L112 190 Q100 196 88 190 Z"/>
-  <ellipse id="shape-triceps" class="muscle" cx="45" cy="115" rx="11" ry="24"/>
-  <ellipse id="shape-triceps" class="muscle" cx="155" cy="115" rx="11" ry="24"/>
-  <path id="shape-glutes" class="muscle" d="M65 192 L135 192 L130 225 Q100 235 70 225 Z"/>
-  <path id="shape-hamstrings" class="muscle" d="M63 227 L96 232 L90 320 L68 320 Z"/>
-  <path id="shape-hamstrings" class="muscle" d="M137 227 L104 232 L110 320 L132 320 Z"/>
-  <rect id="shape-calves" class="muscle" x="63" y="325" width="27" height="25" rx="8"/>
-  <rect id="shape-calves" class="muscle" x="110" y="325" width="27" height="25" rx="8"/>
-</svg>`;
-
-// ---------- Lógica ----------
-let currentExercise = exercises[0];
-let currentView = "front";
+let current = exercises[0];
+let view = "anterior";
+let highlighter = null;
 
 const listEl = document.getElementById("exerciseList");
-const photoEl = document.getElementById("exPhoto");
-const metaEl = document.getElementById("exMeta");
-const bodyContainer = document.getElementById("bodyContainer");
+const modelEl = document.getElementById("model");
 const btnFront = document.getElementById("btnFront");
 const btnBack = document.getElementById("btnBack");
 
-function renderExerciseList() {
+function renderList(){
   listEl.innerHTML = "";
   exercises.forEach(ex => {
-    const btn = document.createElement("button");
-    btn.className = "ex-btn" + (ex.id === currentExercise.id ? " active" : "");
-    btn.textContent = ex.nome;
-    btn.onclick = () => selectExercise(ex);
-    listEl.appendChild(btn);
+    const b = document.createElement("button");
+    b.className = "ex-btn" + (ex === current ? " active" : "");
+    b.textContent = ex.nome;
+    b.onclick = () => select(ex);
+    listEl.appendChild(b);
   });
 }
 
-function selectExercise(ex) {
-  currentExercise = ex;
-  // decide vista padrão: se o músculo principal só existe nas costas, abre em "costas"
-  const primaryLoc = muscleToShape[ex.primaryMuscles[0]];
-  currentView = primaryLoc ? primaryLoc.view : "front";
-  renderExerciseList();
-  renderPhoto();
-  renderBody();
+function select(ex){
+  current = ex;
+  const hasBack = ex.primary.some(m => backMuscles.includes(m));
+  view = hasBack ? "posterior" : "anterior";
+  renderList();
+  renderModel();
 }
 
-function renderPhoto() {
-  photoEl.src = currentExercise.image;
-  photoEl.alt = currentExercise.nome;
+function renderModel(){
+  btnFront.classList.toggle("active", view === "anterior");
+  btnBack.classList.toggle("active", view === "posterior");
 
-  const primaryTags = currentExercise.primaryMuscles
-    .map(m => `<span class="tag">${muscleLabels[m] || m}</span>`).join("");
-  const secondaryTags = currentExercise.secondaryMuscles
-    .map(m => `<span class="tag">${muscleLabels[m] || m}</span>`).join("");
+  if (highlighter) highlighter.destroy();
+  modelEl.innerHTML = "";
 
-  metaEl.innerHTML = `
-    <div><b>${currentExercise.nome}</b></div>
-    <div style="margin-top:6px;">Equipamento: ${currentExercise.equipamento} · Nível: ${currentExercise.nivel}</div>
-    <div style="margin-top:8px;">Principal: ${primaryTags}</div>
-    <div style="margin-top:4px;">Secundário: ${secondaryTags}</div>
-  `;
-}
+  const data = [
+    { name: current.nome + " (principal)", muscles: current.primary, frequency: 2 },
+    { name: current.nome + " (secundário)", muscles: current.secondary, frequency: 1 }
+  ];
 
-function renderBody() {
-  bodyContainer.innerHTML = currentView === "front" ? bodyFrontSVG : bodyBackSVG;
-  btnFront.classList.toggle("active", currentView === "front");
-  btnBack.classList.toggle("active", currentView === "back");
-
-  // limpa e aplica destaque
-  const svg = bodyContainer.querySelector("svg");
-  const allMuscles = svg.querySelectorAll(".muscle");
-  allMuscles.forEach(el => el.classList.remove("primary", "secondary"));
-
-  currentExercise.primaryMuscles.forEach(m => paintMuscle(svg, m, "primary"));
-  currentExercise.secondaryMuscles.forEach(m => paintMuscle(svg, m, "secondary"));
-}
-
-function paintMuscle(svg, muscleName, level) {
-  const loc = muscleToShape[muscleName];
-  if (!loc || loc.view !== currentView) return;
-  const shapes = svg.querySelectorAll("#shape-" + loc.shape);
-  shapes.forEach(el => {
-    // não deixa "secondary" sobrescrever "primary"
-    if (!el.classList.contains("primary")) {
-      el.classList.remove("secondary");
-      el.classList.add(level);
-    }
+  highlighter = createBodyHighlighter({
+    container: modelEl,
+    data,
+    type: view,
+    bodyColor: "#D8D3C8",
+    highlightedColors: ["#E7B8A9", "#C9482F"],
+    style: { width: "220px" }
   });
 }
 
-btnFront.onclick = () => { currentView = "front"; renderBody(); };
-btnBack.onclick = () => { currentView = "back"; renderBody(); };
+btnFront.onclick = () => { view = "anterior"; renderModel(); };
+btnBack.onclick = () => { view = "posterior"; renderModel(); };
 
-// init
-renderExerciseList();
-selectExercise(exercises[0]);
+renderList();
+renderModel();
 </script>
-
 </body>
 </html>
