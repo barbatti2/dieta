@@ -47,29 +47,51 @@
   .card{
     background:var(--surface);
     border:1px solid var(--border);
-    border-radius:20px;
-    padding:20px;
+    border-radius:18px;
+    padding:16px;
+    display:flex;
+    gap:16px;
+    align-items:center;
   }
-  .view-toggle{display:flex;gap:8px;margin-bottom:16px;}
-  .view-toggle button{
+
+  #model{
+    flex:0 0 92px;
+    width:92px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+  }
+
+  .content{
     flex:1;
+    min-width:0;
+  }
+  .content .ex-title{
+    font-family:'Fraunces',serif;
+    font-size:18px;
+    font-weight:500;
+    margin:0 0 8px;
+    line-height:1.15;
+  }
+  .content .muscle-line{
+    font-size:13px;
+    margin-bottom:4px;
+  }
+  .content .muscle-line .k{color:var(--muted);}
+  .content .muscle-line .v.primary{color:var(--accent);font-weight:600;}
+  .content .muscle-line .v.secondary{color:var(--ink);font-weight:500;}
+
+  .view-toggle{display:flex;gap:6px;margin-top:10px;}
+  .view-toggle button{
     background:var(--bg);
     border:1px solid var(--border);
     color:var(--muted);
-    padding:8px;
-    border-radius:8px;
-    font-size:13px;
+    padding:5px 10px;
+    border-radius:20px;
+    font-size:11px;
     cursor:pointer;
   }
   .view-toggle button.active{color:var(--ink);border-color:var(--accent);}
-
-  #model{display:flex;justify-content:center;min-height:280px;}
-
-  .legend{display:flex;gap:16px;justify-content:center;margin-top:8px;font-size:12px;color:var(--muted);}
-  .legend span{display:flex;align-items:center;gap:6px;}
-  .dot{width:10px;height:10px;border-radius:50%;display:inline-block;}
-  .dot.primary{background:var(--accent);}
-  .dot.secondary{background:var(--accent-soft);}
 
   .note{font-size:12px;color:var(--muted);margin-top:20px;line-height:1.5;}
 </style>
@@ -82,14 +104,15 @@
   <div class="exercise-list" id="exerciseList"></div>
 
   <div class="card">
-    <div class="view-toggle">
-      <button id="btnFront" class="active">Frente</button>
-      <button id="btnBack">Costas</button>
-    </div>
     <div id="model"></div>
-    <div class="legend">
-      <span><i class="dot primary"></i>Principal</span>
-      <span><i class="dot secondary"></i>Secundário</span>
+    <div class="content">
+      <p class="ex-title" id="exTitle"></p>
+      <div class="muscle-line"><span class="k">Principal · </span><span class="v primary" id="exPrimary"></span></div>
+      <div class="muscle-line"><span class="k">Secundário · </span><span class="v secondary" id="exSecondary"></span></div>
+      <div class="view-toggle">
+        <button id="btnFront" class="active">Frente</button>
+        <button id="btnBack">Costas</button>
+      </div>
     </div>
   </div>
 
@@ -147,9 +170,21 @@ function select(ex){
   renderModel();
 }
 
+const muscleLabels = {
+  chest:"Peitoral", "front-deltoids":"Ombro (ant.)", "back-deltoids":"Ombro (post.)",
+  triceps:"Tríceps", biceps:"Bíceps", "upper-back":"Costas", "lower-back":"Lombar",
+  trapezius:"Trapézio", quadriceps:"Quadríceps", gluteal:"Glúteo", hamstring:"Posterior",
+  calves:"Panturrilha", abs:"Abdômen", obliques:"Oblíquo", forearm:"Antebraço"
+};
+const label = m => muscleLabels[m] || m;
+
 function renderModel(){
   btnFront.classList.toggle("active", view === "anterior");
   btnBack.classList.toggle("active", view === "posterior");
+
+  document.getElementById("exTitle").textContent = current.nome;
+  document.getElementById("exPrimary").textContent = current.primary.map(label).join(", ");
+  document.getElementById("exSecondary").textContent = current.secondary.map(label).join(", ");
 
   if (highlighter) highlighter.destroy();
   modelEl.innerHTML = "";
@@ -165,7 +200,7 @@ function renderModel(){
     type: view,
     bodyColor: "#D8D3C8",
     highlightedColors: ["#E7B8A9", "#C9482F"],
-    style: { width: "220px" }
+    style: { width: "88px" }
   });
 }
 
