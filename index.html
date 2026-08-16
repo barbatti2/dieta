@@ -2,213 +2,211 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Demo — Mapa Muscular (body-highlighter)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Treino a Dois</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-  :root{
-    --bg:#F7F5F1;
-    --surface:#FFFFFF;
-    --ink:#1F1D1B;
-    --muted:#8A8378;
-    --accent:#C9482F;
-    --accent-soft:#E7B8A9;
-    --border:#D8D3C8;
-    --olive:#3D5A4C;
-    --olive-soft:#DCE4DE;
-  }
-  *{box-sizing:border-box;}
-  body{
-    margin:0;
-    background:var(--bg);
-    color:var(--ink);
-    font-family:'Inter',sans-serif;
-    padding:32px 16px 60px;
-    display:flex;
-    justify-content:center;
-  }
-  .wrap{width:100%;max-width:420px;}
-  h1{font-family:'Fraunces',serif;font-size:22px;font-weight:500;margin:0 0 4px;}
-  .sub{color:var(--muted);font-size:13px;margin:0 0 24px;}
-
-  .exercise-list{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;}
-  .ex-btn{
-    background:var(--surface);
-    border:1px solid var(--border);
-    color:var(--ink);
-    padding:9px 14px;
-    border-radius:999px;
-    font-size:13px;
-    cursor:pointer;
-  }
-  .ex-btn.active{background:var(--ink);color:var(--bg);border-color:var(--ink);}
-
-  .card{
-    background:var(--surface);
-    border:1px solid var(--border);
-    border-radius:18px;
-    padding:16px;
-    display:flex;
-    gap:16px;
-    align-items:center;
-  }
-
-  #model{
-    flex:0 0 92px;
-    width:92px;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-  }
-
-  .content{
-    flex:1;
-    min-width:0;
-  }
-  .content .ex-title{
-    font-family:'Fraunces',serif;
-    font-size:18px;
-    font-weight:500;
-    margin:0 0 8px;
-    line-height:1.15;
-  }
-  .content .muscle-line{
-    font-size:13px;
-    margin-bottom:4px;
-  }
-  .content .muscle-line .k{color:var(--muted);}
-  .content .muscle-line .v.primary{color:var(--accent);font-weight:600;}
-  .content .muscle-line .v.secondary{color:var(--ink);font-weight:500;}
-
-  .view-toggle{display:flex;gap:6px;margin-top:10px;}
-  .view-toggle button{
-    background:var(--bg);
-    border:1px solid var(--border);
-    color:var(--muted);
-    padding:5px 10px;
-    border-radius:20px;
-    font-size:11px;
-    cursor:pointer;
-  }
-  .view-toggle button.active{color:var(--ink);border-color:var(--accent);}
-
-  .note{font-size:12px;color:var(--muted);margin-top:20px;line-height:1.5;}
-</style>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="wrap">
-  <h1>Mapa Muscular</h1>
-  <p class="sub">Usando a lib open source <b>body-highlighter</b> (MIT)</p>
 
-  <div class="exercise-list" id="exerciseList"></div>
+<div class="app">
 
-  <div class="card">
-    <div id="model"></div>
-    <div class="content">
-      <p class="ex-title" id="exTitle"></p>
-      <div class="muscle-line"><span class="k">Principal · </span><span class="v primary" id="exPrimary"></span></div>
-      <div class="muscle-line"><span class="k">Secundário · </span><span class="v secondary" id="exSecondary"></span></div>
-      <div class="view-toggle">
-        <button id="btnFront" class="active">Frente</button>
-        <button id="btnBack">Costas</button>
-      </div>
+  <!-- ===== TOP BAR ===== -->
+  <header class="topbar">
+    <button class="profile-chip" id="profileChip">
+      <span class="avatar" id="avatarInitial">V</span>
+      <span class="profile-name" id="profileName">Você</span>
+      <span class="chevron">⌄</span>
+    </button>
+    <div class="streak-badge" id="streakBadge">
+      <span class="flame">●</span>
+      <span id="streakCount">0</span>
     </div>
+  </header>
+
+  <!-- seletor de perfil (dropdown simples) -->
+  <div class="profile-dropdown" id="profileDropdown">
+    <button class="profile-option" data-profile="voce">
+      <span class="avatar">V</span> Você
+    </button>
+    <button class="profile-option" data-profile="parceira">
+      <span class="avatar">P</span> Sua parceira
+    </button>
   </div>
 
-  <p class="note">Biblioteca MIT license, sem dependência de framework — importada aqui via CDN (esm.sh) só pra essa demo rodar direto no navegador sem passo de build.</p>
+  <!-- ===== SCREENS ===== -->
+  <main class="screens">
+
+    <!-- HOJE -->
+    <section class="screen active" data-screen="hoje">
+      <p class="eyebrow" id="greeting">Bom treino,</p>
+      <h1 class="page-title" id="greetingName">Você</h1>
+
+      <div class="card today-card" id="todayCard">
+        <p class="today-label" id="todayLabel">Treino de hoje</p>
+        <h2 class="today-name" id="todayName">Treino A — Perna</h2>
+        <p class="today-meta" id="todayMeta">6 exercícios · ~50 min</p>
+        <button class="btn-primary" id="startTodayBtn">Iniciar treino</button>
+      </div>
+
+      <div class="quick-actions">
+        <button class="quick-btn" id="quickCardioBtn">
+          <span class="quick-icon">◐</span>
+          Registrar cardio
+        </button>
+      </div>
+
+      <p class="section-label">Últimos dias</p>
+      <div class="week-strip" id="weekStrip"></div>
+    </section>
+
+    <!-- TREINOS (lista) -->
+    <section class="screen" data-screen="treinos">
+      <p class="eyebrow">Seus treinos</p>
+      <h1 class="page-title">Templates</h1>
+      <div class="template-list" id="templateList"></div>
+    </section>
+
+    <!-- TREINOS (execução) -->
+    <section class="screen" data-screen="execucao">
+      <div class="exec-topbar">
+        <span class="label" id="execTemplateName">Treino A — Perna</span>
+        <button class="close-btn" id="execCloseBtn">✕</button>
+      </div>
+
+      <div class="progress-row" id="execProgress"></div>
+
+      <p class="ex-index" id="execIndex">01 / 06</p>
+      <h2 class="ex-name" id="execName">Agachamento Livre</h2>
+
+      <div class="card muscle-card">
+        <div id="execModel" class="mini-model"></div>
+        <div class="content">
+          <p class="muscle-line"><span class="k">Principal · </span><span class="v primary" id="execPrimary"></span></p>
+          <p class="muscle-line"><span class="k">Secundário · </span><span class="v secondary" id="execSecondary"></span></p>
+        </div>
+      </div>
+
+      <div class="card set-card">
+        <p class="set-label" id="setLabel">Série 1 de 4</p>
+        <div class="set-inputs">
+          <div class="input-block">
+            <button class="stepper" data-target="weight" data-dir="-1">–</button>
+            <div class="value" id="weightValue">40</div>
+            <button class="stepper" data-target="weight" data-dir="1">+</button>
+            <div class="unit">kg</div>
+          </div>
+          <div class="divider-v"></div>
+          <div class="input-block">
+            <button class="stepper" data-target="reps" data-dir="-1">–</button>
+            <div class="value" id="repsValue">10</div>
+            <button class="stepper" data-target="reps" data-dir="1">+</button>
+            <div class="unit">reps</div>
+          </div>
+        </div>
+        <button class="btn-primary" id="confirmSetBtn">Concluir série</button>
+      </div>
+
+      <div class="set-list" id="setList"></div>
+
+      <div class="nav-row">
+        <button class="nav-btn" id="prevExBtn">← Anterior</button>
+        <button class="nav-btn next" id="nextExBtn">Próximo →</button>
+      </div>
+    </section>
+
+    <!-- CARDIO (registro rápido) -->
+    <section class="screen" data-screen="cardio">
+      <div class="exec-topbar">
+        <span class="label">Registrar cardio</span>
+        <button class="close-btn" id="cardioCloseBtn">✕</button>
+      </div>
+
+      <p class="section-label">Tipo</p>
+      <div class="chip-row" id="cardioTypeRow">
+        <button class="chip active" data-type="esteira">Esteira</button>
+        <button class="chip" data-type="bike">Bike</button>
+        <button class="chip" data-type="eliptico">Elíptico</button>
+        <button class="chip" data-type="outro">Outro</button>
+      </div>
+
+      <div class="card set-card">
+        <p class="set-label">Tempo</p>
+        <div class="set-inputs">
+          <div class="input-block">
+            <button class="stepper" data-target="cardioMin" data-dir="-1">–</button>
+            <div class="value" id="cardioMinValue">20</div>
+            <button class="stepper" data-target="cardioMin" data-dir="1">+</button>
+            <div class="unit">min</div>
+          </div>
+        </div>
+        <button class="btn-primary" id="confirmCardioBtn">Salvar cardio</button>
+      </div>
+    </section>
+
+    <!-- PROGRESSO -->
+    <section class="screen" data-screen="progresso">
+      <p class="eyebrow">Evolução</p>
+      <h1 class="page-title">Progresso</h1>
+
+      <select class="select-exercise" id="progressExerciseSelect"></select>
+
+      <div class="card chart-card">
+        <div class="chart-stats">
+          <div>
+            <p class="stat-label">Última carga</p>
+            <p class="stat-value" id="lastLoad">—</p>
+          </div>
+          <div>
+            <p class="stat-label">Máxima</p>
+            <p class="stat-value" id="maxLoad">—</p>
+          </div>
+        </div>
+        <svg id="chartSvg" class="chart-svg" viewBox="0 0 300 140"></svg>
+      </div>
+    </section>
+
+    <!-- CALENDÁRIO -->
+    <section class="screen" data-screen="calendario">
+      <p class="eyebrow">Histórico</p>
+      <h1 class="page-title">Calendário</h1>
+
+      <div class="card">
+        <div class="cal-header">
+          <button class="cal-nav" id="calPrevBtn">←</button>
+          <span id="calMonthLabel">Agosto 2026</span>
+          <button class="cal-nav" id="calNextBtn">→</button>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+      </div>
+
+      <div class="card day-detail" id="dayDetail" style="display:none;">
+        <p class="section-label" id="dayDetailDate"></p>
+        <p id="dayDetailContent"></p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ===== BOTTOM NAV ===== -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" data-nav="hoje">
+      <span class="nav-dot"></span>Hoje
+    </button>
+    <button class="nav-item" data-nav="treinos">
+      <span class="nav-dot"></span>Treinos
+    </button>
+    <button class="nav-item" data-nav="progresso">
+      <span class="nav-dot"></span>Progresso
+    </button>
+    <button class="nav-item" data-nav="calendario">
+      <span class="nav-dot"></span>Calendário
+    </button>
+  </nav>
+
 </div>
 
-<script type="module">
-import createBodyHighlighter from 'https://esm.sh/body-highlighter';
-
-const exercises = [
-  {
-    nome: "Supino Reto",
-    primary: ["chest"],
-    secondary: ["front-deltoids", "triceps"]
-  },
-  {
-    nome: "Remada Curvada",
-    primary: ["upper-back"],
-    secondary: ["biceps", "back-deltoids"]
-  },
-  {
-    nome: "Agachamento Livre",
-    primary: ["quadriceps"],
-    secondary: ["gluteal", "hamstring"]
-  }
-];
-
-const backMuscles = ["trapezius","upper-back","lower-back","triceps","back-deltoids","gluteal","hamstring"];
-
-let current = exercises[0];
-let view = "anterior";
-let highlighter = null;
-
-const listEl = document.getElementById("exerciseList");
-const modelEl = document.getElementById("model");
-const btnFront = document.getElementById("btnFront");
-const btnBack = document.getElementById("btnBack");
-
-function renderList(){
-  listEl.innerHTML = "";
-  exercises.forEach(ex => {
-    const b = document.createElement("button");
-    b.className = "ex-btn" + (ex === current ? " active" : "");
-    b.textContent = ex.nome;
-    b.onclick = () => select(ex);
-    listEl.appendChild(b);
-  });
-}
-
-function select(ex){
-  current = ex;
-  const hasBack = ex.primary.some(m => backMuscles.includes(m));
-  view = hasBack ? "posterior" : "anterior";
-  renderList();
-  renderModel();
-}
-
-const muscleLabels = {
-  chest:"Peitoral", "front-deltoids":"Ombro (ant.)", "back-deltoids":"Ombro (post.)",
-  triceps:"Tríceps", biceps:"Bíceps", "upper-back":"Costas", "lower-back":"Lombar",
-  trapezius:"Trapézio", quadriceps:"Quadríceps", gluteal:"Glúteo", hamstring:"Posterior",
-  calves:"Panturrilha", abs:"Abdômen", obliques:"Oblíquo", forearm:"Antebraço"
-};
-const label = m => muscleLabels[m] || m;
-
-function renderModel(){
-  btnFront.classList.toggle("active", view === "anterior");
-  btnBack.classList.toggle("active", view === "posterior");
-
-  document.getElementById("exTitle").textContent = current.nome;
-  document.getElementById("exPrimary").textContent = current.primary.map(label).join(", ");
-  document.getElementById("exSecondary").textContent = current.secondary.map(label).join(", ");
-
-  if (highlighter) highlighter.destroy();
-  modelEl.innerHTML = "";
-
-  const data = [
-    { name: current.nome + " (principal)", muscles: current.primary, frequency: 2 },
-    { name: current.nome + " (secundário)", muscles: current.secondary, frequency: 1 }
-  ];
-
-  highlighter = createBodyHighlighter({
-    container: modelEl,
-    data,
-    type: view,
-    bodyColor: "#D8D3C8",
-    highlightedColors: ["#E7B8A9", "#C9482F"],
-    style: { width: "88px" }
-  });
-}
-
-btnFront.onclick = () => { view = "anterior"; renderModel(); };
-btnBack.onclick = () => { view = "posterior"; renderModel(); };
-
-renderList();
-renderModel();
-</script>
+<script type="module" src="app.js"></script>
 </body>
 </html>
