@@ -31,45 +31,18 @@ const PROFILES = {
   voce: {
     nome: "Você",
     streak: 12,
-    treinoHojeId: "a",
     diasTreinados: [2, 4, 6, 9, 11, 12, 13, 15, 16],
-    historico: {
-      supino_reto_barra: [
-        { data: "01/08", carga: 52 }, { data: "04/08", carga: 55 },
-        { data: "08/08", carga: 55 }, { data: "12/08", carga: 60 },
-        { data: "15/08", carga: 60 }
-      ],
-      agachamento_livre: [
-        { data: "02/08", carga: 70 }, { data: "05/08", carga: 75 },
-        { data: "09/08", carga: 80 }, { data: "13/08", carga: 85 },
-        { data: "16/08", carga: 90 }
-      ]
-    },
-    recordes: [
-      { exercicio: "supino_reto_barra", data: "12 Ago", valor: "60kg (+2kg)" },
-      { exercicio: "agachamento_livre", data: "16 Ago", valor: "90kg (+5kg)" }
-    ]
+    cardioLog: []
   },
   parceira: {
     nome: "Sua parceira",
     streak: 7,
-    treinoHojeId: "b",
     diasTreinados: [3, 5, 8, 10, 13, 14, 16],
-    historico: {
-      supino_reto_barra: [
-        { data: "03/08", carga: 15 }, { data: "07/08", carga: 17.5 },
-        { data: "10/08", carga: 17.5 }, { data: "14/08", carga: 20 }
-      ],
-      agachamento_livre: [
-        { data: "04/08", carga: 30 }, { data: "08/08", carga: 32.5 },
-        { data: "11/08", carga: 35 }, { data: "15/08", carga: 35 }
-      ]
-    },
-    recordes: [
-      { exercicio: "supino_reto_barra", data: "14 Ago", valor: "20kg (+2.5kg)" }
-    ]
+    cardioLog: []
   }
 };
+
+const HOJE_DIA = 16; // dia fake usado como "hoje" nos dados de exemplo
 
 /* =========================================================
    ESTADO
@@ -79,8 +52,27 @@ let state = {
   perfilAtual: "voce",
   calMonth: 7, // agosto = index 7 (0-based)
   calYear: 2026,
-  execucao: null
+  execucao: null,
+  cardioTipo: "esteira",
+  cardioIntensidade: "leve"
 };
+
+function currentProfile() {
+  return PROFILES[state.perfilAtual];
+}
+
+/* =========================================================
+   TOAST (confirmação rápida)
+   ========================================================= */
+
+let toastTimer = null;
+function showToast(msg) {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove("show"), 1800);
+}
 
 /* =========================================================
    NAVEGAÇÃO
@@ -100,34 +92,22 @@ document.querySelectorAll(".nav-item").forEach(btn => {
 });
 
 /* =========================================================
-   PERFIL
+   PERFIL — troca instantânea, sem dropdown
    ========================================================= */
 
-const profileDropdown = document.getElementById("profileDropdown");
-
-document.getElementById("profileChip").addEventListener("click", (e) => {
-  e.stopPropagation();
-  profileDropdown.classList.toggle("open");
-});
-document.addEventListener("click", () => profileDropdown.classList.remove("open"));
-
-document.querySelectorAll(".profile-option").forEach(opt => {
-  opt.addEventListener("click", (e) => {
-    e.stopPropagation();
-    state.perfilAtual = opt.dataset.profile;
-    profileDropdown.classList.remove("open");
-    renderAll();
+function renderProfileToggles() {
+  document.querySelectorAll(".profile-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.profile === state.perfilAtual);
   });
-});
-
-// os avatares "espelho" no header das outras telas (Treinos, Progresso, Calendário)
-document.querySelectorAll(".profile-chip-btn").forEach(btn => {
-  btn.addEventListener("click", () => showScreen("hoje"));
-});
-
-function currentProfile() {
-  return PROFILES[state.perfilAtual];
 }
+
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".profile-btn");
+  if (!btn) return;
+  if (btn.dataset.profile === state.perfilAtual) return;
+  state.perfilAtual = btn.dataset.profile;
+  renderAll();
+});
 
 /* =========================================================
    TELA "HOJE"
@@ -135,22 +115,13 @@ function currentProfile() {
 
 function renderHoje() {
   const p = currentProfile();
-  document.getElementById("avatarMain").src = AVATARS[state.perfilAtual];
-  document.getElementById("avatarSecondary").src = AVATARS[state.perfilAtual === "voce" ? "parceira" : "voce"];
-  document.querySelectorAll(".avatar-mirror").forEach(img => img.src = AVATARS[state.perfilAtual]);
   document.getElementById("streakCount").textContent = p.streak;
-
-  const template = TEMPLATES.find(t => t.id === p.treinoHojeId);
-  document.getElementById("todayFichaLabel").textContent = template.ficha;
-  document.getElementById("todayWorkoutName").textContent = template.nome;
-  document.getElementById("todayWorkoutMeta").textContent = `${template.exercicios.length} exercícios • ${template.exercicios.length * 10} min`;
 
   const strip = document.getElementById("weekStrip");
   strip.innerHTML = "";
   const dayLabels = ["D", "S", "T", "Q", "Q", "S", "S"];
-  const today = 16;
   for (let i = 6; i >= 0; i--) {
-    const dayNum = today - i;
+    const dayNum = HOJE_DIA - i;
     const trained = p.diasTreinados.includes(dayNum);
     const el = document.createElement("div");
     el.className = "flex flex-col items-center gap-2";
@@ -164,10 +135,13 @@ function renderHoje() {
   }
 }
 
-document.getElementById("startTodayBtn").addEventListener("click", () => {
-  startExecution(currentProfile().treinoHojeId);
-});
-document.getElementById("quickCardioBtn").addEventListener("click", () => showScreen("cardio"));
+function marcarDiaTreinado() {
+  const p = currentProfile();
+  if (!p.diasTreinados.includes(HOJE_DIA)) {
+    p.diasTreinados.push(HOJE_DIA);
+    p.streak++;
+  }
+}
 
 /* =========================================================
    TELA "TREINOS"
@@ -183,7 +157,7 @@ function renderTemplateList() {
       <div class="flex justify-between items-start mb-4">
         <div class="space-y-1 cursor-pointer flex-1 template-open">
           <span class="text-[10px] font-bold text-clay uppercase tracking-[0.2em]">${t.ficha}</span>
-          <h3 class="font-serif text-xl">${t.nome}</h3>
+          <h3 class="font-serif text-xl font-medium">${t.nome}</h3>
         </div>
         <div class="flex items-center gap-2 flex-shrink-0">
           <button class="template-edit w-9 h-9 bg-paper rounded-xl flex items-center justify-center text-muted hover:text-clay transition-all">
@@ -296,7 +270,7 @@ document.getElementById("editorBackBtn").addEventListener("click", () => showScr
 document.getElementById("editorSaveBtn").addEventListener("click", () => {
   // aqui entraria o salvamento real (Firestore) do template atualizado
   renderTemplateList();
-  renderHoje();
+  showToast("Treino salvo!");
   showScreen("treinos");
 });
 document.getElementById("editorDeleteBtn").addEventListener("click", () => {
@@ -304,12 +278,7 @@ document.getElementById("editorDeleteBtn").addEventListener("click", () => {
   const idx = TEMPLATES.findIndex(t => t.id === editorTemplateId);
   if (idx >= 0) TEMPLATES.splice(idx, 1);
   renderTemplateList();
-  renderHoje();
   showScreen("treinos");
-});
-
-document.getElementById("editTodayBtn").addEventListener("click", () => {
-  openEditor(currentProfile().treinoHojeId);
 });
 
 /* =========================================================
@@ -322,11 +291,8 @@ function startExecution(templateId) {
   state.execucao = {
     templateId,
     exercicioIndex: 0,
-    setAtual: 1,
-    totalSets: 4,
     weight: 40,
-    reps: 10,
-    setsFeitos: []
+    reps: 10
   };
   showScreen("execucao");
   renderExecucao();
@@ -344,10 +310,10 @@ function renderExecucao() {
   const t = currentTemplate();
   const ex = currentExercise();
   const ec = state.execucao;
+  const isLast = ec.exercicioIndex === t.exercicios.length - 1;
 
   document.getElementById("execIndex").textContent = `${ec.exercicioIndex + 1} / ${t.exercicios.length}`;
   document.getElementById("execProgressBar").style.width = `${((ec.exercicioIndex) / t.exercicios.length) * 100}%`;
-  document.getElementById("execSetLabel").textContent = `Série ${ec.setAtual} de ${ec.totalSets}`;
   document.getElementById("execName").textContent = ex.nome;
 
   const focusText = [...ex.primary, ...ex.secondary].map(m => muscleLabels[m] || m).join(", ");
@@ -357,8 +323,13 @@ function renderExecucao() {
   img.src = ex.imagem || "";
   img.alt = ex.nome;
 
+  document.getElementById("weightValue").textContent = ec.weight;
+  document.getElementById("repsValue").textContent = ec.reps;
+
+  document.getElementById("nextExBtn").style.display = isLast ? "none" : "flex";
+  document.getElementById("finishWorkoutBtn").style.display = isLast ? "flex" : "none";
+
   renderMuscleModel(ex);
-  renderSetCard();
 }
 
 function renderMuscleModel(ex) {
@@ -378,29 +349,8 @@ function renderMuscleModel(ex) {
     type: hasBack ? "posterior" : "anterior",
     bodyColor: "#D8D3C8",
     highlightedColors: ["#E7B8A9", "#C9482F"],
-    style: { width: "56px" }
+    style: { width: "44px" }
   });
-}
-
-function renderSetCard() {
-  const ec = state.execucao;
-  document.getElementById("weightValue").textContent = ec.weight;
-  document.getElementById("repsValue").textContent = ec.reps;
-
-  const history = document.getElementById("execHistory");
-  history.innerHTML = "";
-  for (let i = 1; i <= ec.totalSets; i++) {
-    const done = ec.setsFeitos[i - 1];
-    const isCurrent = i === ec.setAtual;
-    const row = document.createElement("div");
-    row.className = `flex items-center justify-between px-4 py-3 ${isCurrent ? "bg-claySoft/10" : ""}`;
-    row.innerHTML = `
-      <span class="text-xs font-bold ${done ? "text-emerald" : isCurrent ? "text-clay" : "text-muted"}">${i}</span>
-      <span class="text-xs font-medium text-ink">${done ? done.peso + " kg" : "--"}</span>
-      <span class="text-xs font-medium text-ink">${done ? done.reps : "--"}</span>
-    `;
-    history.appendChild(row);
-  }
 }
 
 document.querySelectorAll(".stepper").forEach(btn => {
@@ -416,24 +366,15 @@ document.querySelectorAll(".stepper").forEach(btn => {
     if (!ec) return;
     if (target === "weight") ec.weight = Math.max(0, ec.weight + dir * 2.5);
     if (target === "reps") ec.reps = Math.max(0, ec.reps + dir);
-    renderSetCard();
+    document.getElementById("weightValue").textContent = ec.weight;
+    document.getElementById("repsValue").textContent = ec.reps;
   });
-});
-
-document.getElementById("confirmSetBtn").addEventListener("click", () => {
-  const ec = state.execucao;
-  ec.setsFeitos[ec.setAtual - 1] = { peso: ec.weight, reps: ec.reps };
-  if (ec.setAtual < ec.totalSets) ec.setAtual++;
-  document.getElementById("execSetLabel").textContent = `Série ${ec.setAtual} de ${ec.totalSets}`;
-  renderSetCard();
 });
 
 document.getElementById("prevExBtn").addEventListener("click", () => {
   const ec = state.execucao;
   if (ec.exercicioIndex > 0) {
     ec.exercicioIndex--;
-    ec.setAtual = 1;
-    ec.setsFeitos = [];
     renderExecucao();
   }
 });
@@ -443,13 +384,17 @@ document.getElementById("nextExBtn").addEventListener("click", () => {
   const t = currentTemplate();
   if (ec.exercicioIndex < t.exercicios.length - 1) {
     ec.exercicioIndex++;
-    ec.setAtual = 1;
-    ec.setsFeitos = [];
     renderExecucao();
-  } else {
-    showScreen("hoje");
-    renderHoje();
   }
+});
+
+document.getElementById("finishWorkoutBtn").addEventListener("click", () => {
+  // aqui entraria o salvamento real (Firestore) do treino concluído
+  marcarDiaTreinado();
+  renderHoje();
+  renderCalendario();
+  showToast("Treino concluído! 💪");
+  showScreen("hoje");
 });
 
 document.getElementById("execCloseBtn").addEventListener("click", () => showScreen("treinos"));
@@ -460,6 +405,7 @@ document.getElementById("execCloseBtn").addEventListener("click", () => showScre
 
 document.querySelectorAll(".cardio-type-btn").forEach(btn => {
   btn.addEventListener("click", () => {
+    state.cardioTipo = btn.dataset.type;
     document.querySelectorAll(".cardio-type-btn").forEach(b => {
       b.classList.remove("border-2", "border-clay");
       b.classList.add("border", "border-hairline");
@@ -485,6 +431,7 @@ document.querySelectorAll(".cardio-preset").forEach(btn => {
 
 document.querySelectorAll(".intensity-btn").forEach(btn => {
   btn.addEventListener("click", () => {
+    state.cardioIntensidade = btn.dataset.intensity;
     document.querySelectorAll(".intensity-btn").forEach(b => {
       b.classList.remove("bg-paper", "text-ink");
       b.classList.add("text-muted");
@@ -496,86 +443,16 @@ document.querySelectorAll(".intensity-btn").forEach(btn => {
 
 document.getElementById("cardioCloseBtn").addEventListener("click", () => showScreen("hoje"));
 document.getElementById("confirmCardioBtn").addEventListener("click", () => {
+  const p = currentProfile();
+  const minutos = document.getElementById("cardioMinValue").textContent;
   // aqui entraria o salvamento real (Firestore)
+  p.cardioLog.push({ tipo: state.cardioTipo, minutos, intensidade: state.cardioIntensidade, dia: HOJE_DIA });
+  marcarDiaTreinado();
+  renderHoje();
+  renderCalendario();
+  showToast("Cardio salvo!");
   showScreen("hoje");
 });
-
-/* =========================================================
-   TELA "PROGRESSO"
-   ========================================================= */
-
-function renderProgressoOptions() {
-  const select = document.getElementById("progressExerciseSelect");
-  select.innerHTML = "";
-  const p = currentProfile();
-  Object.keys(p.historico).forEach(exId => {
-    const opt = document.createElement("option");
-    opt.value = exId;
-    opt.textContent = EXERCISES[exId]?.nome || exId;
-    select.appendChild(opt);
-  });
-  renderProgresso(select.value);
-}
-
-document.getElementById("progressExerciseSelect").addEventListener("change", e => renderProgresso(e.target.value));
-
-function renderProgresso(exId) {
-  const p = currentProfile();
-  const dados = p.historico[exId] || [];
-  if (dados.length === 0) return;
-
-  const cargas = dados.map(d => d.carga);
-  const last = cargas[cargas.length - 1];
-  const max = Math.max(...cargas);
-  const avg = (cargas.reduce((a, b) => a + b, 0) / cargas.length).toFixed(1);
-  const change = (((last - cargas[0]) / cargas[0]) * 100).toFixed(0);
-
-  document.getElementById("statLast").innerHTML = `${last} <span class="text-xs font-sans text-muted">kg</span>`;
-  document.getElementById("statMax").innerHTML = `${max} <span class="text-xs font-sans text-muted">kg</span>`;
-  document.getElementById("statAvg").innerHTML = `${avg} <span class="text-xs font-sans text-muted">kg</span>`;
-  document.getElementById("statSessions").textContent = dados.length;
-  document.getElementById("statChange").textContent = `${change >= 0 ? "+" : ""}${change}% no período`;
-
-  const records = document.getElementById("recordsList");
-  records.innerHTML = "";
-  p.recordes.forEach(r => {
-    const el = document.createElement("div");
-    el.className = "bg-white/50 border border-hairline rounded-2xl p-4 flex items-center justify-between";
-    el.innerHTML = `
-      <div class="flex items-center gap-3">
-        <div class="w-8 h-8 bg-claySoft/20 rounded-full flex items-center justify-center text-clay">
-          <i class="fa-solid fa-trophy text-xs"></i>
-        </div>
-        <div>
-          <p class="text-xs font-bold">${EXERCISES[r.exercicio]?.nome || r.exercicio}</p>
-          <p class="text-[10px] text-muted">${r.data} • ${r.valor}</p>
-        </div>
-      </div>
-      <i class="fa-solid fa-chevron-right text-hairline text-xs"></i>
-    `;
-    records.appendChild(el);
-  });
-
-  const trace = {
-    x: dados.map(d => d.data),
-    y: cargas,
-    type: 'scatter',
-    mode: 'lines+markers',
-    line: { color: '#C9482F', width: 3, shape: 'spline' },
-    marker: { color: '#C9482F', size: 8, line: { color: 'white', width: 2 } },
-    fill: 'tozeroy',
-    fillcolor: 'rgba(201, 72, 47, 0.05)'
-  };
-  const layout = {
-    margin: { t: 10, r: 10, b: 30, l: 30 },
-    paper_bgcolor: 'rgba(0,0,0,0)',
-    plot_bgcolor: 'rgba(0,0,0,0)',
-    xaxis: { showgrid: false, tickfont: { size: 9, color: '#8A8378', family: 'Inter' } },
-    yaxis: { showgrid: true, gridcolor: '#D8D3C8', tickfont: { size: 9, color: '#8A8378', family: 'Inter' }, zeroline: false },
-    showlegend: false
-  };
-  Plotly.newPlot('progressionChart', [trace], layout, { responsive: true, displayModeBar: false, displaylogo: false });
-}
 
 /* =========================================================
    TELA "CALENDÁRIO"
@@ -604,13 +481,12 @@ function renderCalendario() {
   const firstDay = new Date(state.calYear, state.calMonth, 1).getDay();
   const daysInMonth = new Date(state.calYear, state.calMonth + 1, 0).getDate();
   const isCurrentMonth = state.calMonth === 7 && state.calYear === 2026;
-  const today = 16;
 
   for (let i = 0; i < firstDay; i++) grid.appendChild(document.createElement("span"));
 
   for (let day = 1; day <= daysInMonth; day++) {
     const trained = isCurrentMonth && p.diasTreinados.includes(day);
-    const isToday = isCurrentMonth && day === today;
+    const isToday = isCurrentMonth && day === HOJE_DIA;
     const cell = document.createElement("span");
     cell.textContent = day;
     cell.className = "text-center py-3 text-xs font-medium rounded-full relative cursor-default " +
@@ -628,11 +504,10 @@ function renderCalendario() {
 }
 
 function showDayDetail(day) {
-  const template = TEMPLATES.find(t => t.id === currentProfile().treinoHojeId);
   document.getElementById("dayDetailWrap").style.display = "block";
   document.getElementById("dayDetailTitle").textContent = `Detalhes: ${day} de ${MONTH_NAMES[state.calMonth]}`;
-  document.getElementById("dayDetailName").textContent = template.nome;
-  document.getElementById("dayDetailMeta").textContent = `${template.exercicios.length} exercícios • ~50 min`;
+  document.getElementById("dayDetailName").textContent = "Atividade registrada";
+  document.getElementById("dayDetailMeta").textContent = "Detalhes completos virão do histórico salvo no Firestore.";
 }
 
 /* =========================================================
@@ -640,9 +515,9 @@ function showDayDetail(day) {
    ========================================================= */
 
 function renderAll() {
+  renderProfileToggles();
   renderHoje();
   renderTemplateList();
-  renderProgressoOptions();
   renderCalendario();
 }
 
