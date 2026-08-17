@@ -5,51 +5,15 @@ import createBodyHighlighter from 'https://esm.sh/body-highlighter';
    ========================================================= */
 
 const EXERCISES = {
-  agachamento: {
-    nome: "Agachamento Livre",
-    primary: ["quadriceps"],
-    secondary: ["gluteal", "hamstring"]
-  },
-  legPress: {
-    nome: "Leg Press 45°",
-    primary: ["quadriceps"],
-    secondary: ["gluteal"]
-  },
-  cadeiraFlexora: {
-    nome: "Cadeira Flexora",
-    primary: ["hamstring"],
-    secondary: []
-  },
-  remadaCurvada: {
-    nome: "Remada Curvada",
-    primary: ["upper-back"],
-    secondary: ["biceps", "back-deltoids"]
-  },
-  puxadaFrente: {
-    nome: "Puxada pela Frente",
-    primary: ["upper-back"],
-    secondary: ["biceps"]
-  },
-  roscaDireta: {
-    nome: "Rosca Direta",
-    primary: ["biceps"],
-    secondary: ["forearm"]
-  },
-  supino: {
-    nome: "Supino Reto",
-    primary: ["chest"],
-    secondary: ["front-deltoids", "triceps"]
-  },
-  desenvolvimento: {
-    nome: "Desenvolvimento com Halteres",
-    primary: ["front-deltoids"],
-    secondary: ["triceps"]
-  },
-  triceps: {
-    nome: "Tríceps Corda",
-    primary: ["triceps"],
-    secondary: []
-  }
+  agachamento:    { nome: "Agachamento Livre", primary: ["quadriceps"], secondary: ["gluteal", "hamstring"] },
+  legPress:       { nome: "Leg Press 45°", primary: ["quadriceps"], secondary: ["gluteal"] },
+  cadeiraFlexora: { nome: "Cadeira Flexora", primary: ["hamstring"], secondary: [] },
+  remadaCurvada:  { nome: "Remada Curvada", primary: ["upper-back"], secondary: ["biceps", "back-deltoids"] },
+  puxadaFrente:   { nome: "Puxada pela Frente", primary: ["upper-back"], secondary: ["biceps"] },
+  roscaDireta:    { nome: "Rosca Direta", primary: ["biceps"], secondary: ["forearm"] },
+  supino:         { nome: "Supino Reto Barra", primary: ["chest"], secondary: ["front-deltoids", "triceps"] },
+  desenvolvimento:{ nome: "Desenvolvimento com Halteres", primary: ["front-deltoids"], secondary: ["triceps"] },
+  triceps:        { nome: "Tríceps Corda", primary: ["triceps"], secondary: [] }
 };
 
 const backMuscles = ["trapezius", "upper-back", "lower-back", "triceps", "back-deltoids", "gluteal", "hamstring"];
@@ -62,48 +26,57 @@ const muscleLabels = {
 };
 
 const TEMPLATES = [
-  { id: "a", nome: "Treino A — Perna", exercicios: ["agachamento", "legPress", "cadeiraFlexora"] },
-  { id: "b", nome: "Treino B — Costas & Bíceps", exercicios: ["remadaCurvada", "puxadaFrente", "roscaDireta"] },
-  { id: "c", nome: "Treino C — Peito, Ombro & Tríceps", exercicios: ["supino", "desenvolvimento", "triceps"] },
-  { id: "cardio", nome: "Cardio", exercicios: [] }
+  { id: "a", nome: "Peito e Tríceps", ficha: "Ficha A", tags: ["Peitoral", "Tríceps", "Ombros"], exercicios: ["supino", "desenvolvimento", "triceps"] },
+  { id: "b", nome: "Costas e Bíceps", ficha: "Ficha B", tags: ["Dorsais", "Bíceps", "Antebraço"], exercicios: ["remadaCurvada", "puxadaFrente", "roscaDireta"] },
+  { id: "c", nome: "Pernas e Glúteos", ficha: "Ficha C", tags: ["Quadríceps", "Posterior", "Glúteos"], exercicios: ["agachamento", "legPress", "cadeiraFlexora"] }
 ];
 
-// dados por perfil (fake) — isso vira o "usuarios/{uid}/..." no Firestore
+const AVATARS = {
+  voce: "https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg",
+  parceira: "https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-5.jpg"
+};
+
 const PROFILES = {
   voce: {
     nome: "Você",
-    inicial: "V",
-    streak: 5,
-    treinoHoje: "a",
+    streak: 12,
+    treinoHojeId: "a",
     diasTreinados: [2, 4, 6, 9, 11, 12, 13, 15, 16],
     historico: {
-      agachamento: [
-        { data: "20/07", carga: 60 }, { data: "27/07", carga: 62.5 },
-        { data: "03/08", carga: 65 }, { data: "10/08", carga: 67.5 },
-        { data: "15/08", carga: 70 }
-      ],
       supino: [
-        { data: "21/07", carga: 40 }, { data: "28/07", carga: 42.5 },
-        { data: "04/08", carga: 42.5 }, { data: "11/08", carga: 45 }
+        { data: "01/08", carga: 52 }, { data: "04/08", carga: 55 },
+        { data: "08/08", carga: 55 }, { data: "12/08", carga: 60 },
+        { data: "15/08", carga: 60 }
+      ],
+      agachamento: [
+        { data: "02/08", carga: 70 }, { data: "05/08", carga: 75 },
+        { data: "09/08", carga: 80 }, { data: "13/08", carga: 85 },
+        { data: "16/08", carga: 90 }
       ]
-    }
+    },
+    recordes: [
+      { exercicio: "supino", data: "12 Ago", valor: "60kg (+2kg)" },
+      { exercicio: "agachamento", data: "16 Ago", valor: "90kg (+5kg)" }
+    ]
   },
   parceira: {
     nome: "Sua parceira",
-    inicial: "P",
-    streak: 3,
-    treinoHoje: "b",
+    streak: 7,
+    treinoHojeId: "b",
     diasTreinados: [3, 5, 8, 10, 13, 14, 16],
     historico: {
-      agachamento: [
-        { data: "22/07", carga: 30 }, { data: "29/07", carga: 32.5 },
-        { data: "05/08", carga: 35 }, { data: "12/08", carga: 35 }
-      ],
       supino: [
-        { data: "23/07", carga: 15 }, { data: "30/07", carga: 17.5 },
-        { data: "06/08", carga: 20 }
+        { data: "03/08", carga: 15 }, { data: "07/08", carga: 17.5 },
+        { data: "10/08", carga: 17.5 }, { data: "14/08", carga: 20 }
+      ],
+      agachamento: [
+        { data: "04/08", carga: 30 }, { data: "08/08", carga: 32.5 },
+        { data: "11/08", carga: 35 }, { data: "15/08", carga: 35 }
       ]
-    }
+    },
+    recordes: [
+      { exercicio: "supino", data: "14 Ago", valor: "20kg (+2.5kg)" }
+    ]
   }
 };
 
@@ -113,27 +86,21 @@ const PROFILES = {
 
 let state = {
   perfilAtual: "voce",
-  execucao: {
-    templateId: null,
-    exercicioIndex: 0,
-    setAtual: 1,
-    totalSets: 4,
-    weight: 40,
-    reps: 10,
-    setsFeitos: [] // [{peso, reps}]
-  }
+  calMonth: 7, // agosto = index 7 (0-based)
+  calYear: 2026,
+  execucao: null
 };
 
 /* =========================================================
-   NAVEGAÇÃO ENTRE TELAS
+   NAVEGAÇÃO
    ========================================================= */
 
 function showScreen(name) {
-  document.querySelectorAll(".screen").forEach(s => {
-    s.classList.toggle("active", s.dataset.screen === name);
-  });
+  document.querySelectorAll(".screen").forEach(s => s.classList.toggle("active", s.dataset.screen === name));
   document.querySelectorAll(".nav-item").forEach(b => {
-    b.classList.toggle("active", b.dataset.nav === name);
+    const active = b.dataset.nav === name;
+    b.classList.toggle("text-clay", active);
+    b.classList.toggle("text-muted", !active);
   });
 }
 
@@ -145,19 +112,26 @@ document.querySelectorAll(".nav-item").forEach(btn => {
    PERFIL
    ========================================================= */
 
-const profileChip = document.getElementById("profileChip");
 const profileDropdown = document.getElementById("profileDropdown");
 
-profileChip.addEventListener("click", () => {
+document.getElementById("profileChip").addEventListener("click", (e) => {
+  e.stopPropagation();
   profileDropdown.classList.toggle("open");
 });
+document.addEventListener("click", () => profileDropdown.classList.remove("open"));
 
 document.querySelectorAll(".profile-option").forEach(opt => {
-  opt.addEventListener("click", () => {
+  opt.addEventListener("click", (e) => {
+    e.stopPropagation();
     state.perfilAtual = opt.dataset.profile;
     profileDropdown.classList.remove("open");
     renderAll();
   });
+});
+
+// os avatares "espelho" no header das outras telas (Treinos, Progresso, Calendário)
+document.querySelectorAll(".profile-chip-btn").forEach(btn => {
+  btn.addEventListener("click", () => showScreen("hoje"));
 });
 
 function currentProfile() {
@@ -170,63 +144,72 @@ function currentProfile() {
 
 function renderHoje() {
   const p = currentProfile();
-  document.getElementById("avatarInitial").textContent = p.inicial;
-  document.getElementById("profileName").textContent = p.nome;
-  document.getElementById("greetingName").textContent = p.nome;
+  document.getElementById("avatarMain").src = AVATARS[state.perfilAtual];
+  document.getElementById("avatarSecondary").src = AVATARS[state.perfilAtual === "voce" ? "parceira" : "voce"];
+  document.querySelectorAll(".avatar-mirror").forEach(img => img.src = AVATARS[state.perfilAtual]);
   document.getElementById("streakCount").textContent = p.streak;
 
-  const template = TEMPLATES.find(t => t.id === p.treinoHoje);
-  document.getElementById("todayName").textContent = template.nome;
-  document.getElementById("todayMeta").textContent =
-    `${template.exercicios.length} exercícios · ~${template.exercicios.length * 10} min`;
+  const template = TEMPLATES.find(t => t.id === p.treinoHojeId);
+  document.getElementById("todayFichaLabel").textContent = template.ficha;
+  document.getElementById("todayWorkoutName").textContent = template.nome;
+  document.getElementById("todayWorkoutMeta").textContent = `${template.exercicios.length} exercícios • ${template.exercicios.length * 10} min`;
 
-  // faixa da semana (fake: últimos 7 dias, marca os que batem com diasTreinados)
   const strip = document.getElementById("weekStrip");
   strip.innerHTML = "";
-  const dayLabels = ["S", "T", "Q", "Q", "S", "S", "D"];
-  const today = 16; // dia fake de "hoje" pra combinar com diasTreinados
+  const dayLabels = ["D", "S", "T", "Q", "Q", "S", "S"];
+  const today = 16;
   for (let i = 6; i >= 0; i--) {
     const dayNum = today - i;
     const trained = p.diasTreinados.includes(dayNum);
     const el = document.createElement("div");
-    el.className = "week-day" + (trained ? " trained" : "");
-    el.innerHTML = `<div class="d">${dayLabels[(dayNum) % 7]}</div><div class="n">${dayNum}</div>`;
+    el.className = "flex flex-col items-center gap-2";
+    el.innerHTML = `
+      <span class="text-[9px] font-bold text-muted uppercase">${dayLabels[dayNum % 7]}</span>
+      <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs shadow-sm ${
+        trained ? "bg-clay text-white" : "border border-hairline bg-paper text-hairline"
+      }">${trained ? '<i class="fa-solid fa-check"></i>' : ""}</div>
+    `;
     strip.appendChild(el);
   }
 }
 
 document.getElementById("startTodayBtn").addEventListener("click", () => {
-  const p = currentProfile();
-  startExecution(p.treinoHoje);
+  startExecution(currentProfile().treinoHojeId);
 });
-
-document.getElementById("quickCardioBtn").addEventListener("click", () => {
-  showScreen("cardio");
-});
+document.getElementById("quickCardioBtn").addEventListener("click", () => showScreen("cardio"));
 
 /* =========================================================
-   TELA "TREINOS" (lista de templates)
+   TELA "TREINOS"
    ========================================================= */
 
 function renderTemplateList() {
   const list = document.getElementById("templateList");
   list.innerHTML = "";
   TEMPLATES.forEach(t => {
-    const btn = document.createElement("button");
-    btn.className = "template-card";
-    const isCardio = t.id === "cardio";
-    btn.innerHTML = `
-      <div>
-        <p class="t-name">${t.nome}</p>
-        <p class="t-meta">${isCardio ? "Esteira, bike, elíptico..." : t.exercicios.length + " exercícios"}</p>
+    const card = document.createElement("article");
+    card.className = "bg-card border border-hairline rounded-[2rem] p-6 shadow-sm group hover:border-clay/30 transition-all cursor-pointer";
+    card.innerHTML = `
+      <div class="flex justify-between items-start mb-6">
+        <div class="space-y-1">
+          <span class="text-[10px] font-bold text-clay uppercase tracking-[0.2em]">${t.ficha}</span>
+          <h3 class="font-serif text-2xl">${t.nome}</h3>
+        </div>
+        <div class="w-12 h-12 bg-paper rounded-2xl flex items-center justify-center text-ink group-hover:bg-clay group-hover:text-white transition-all">
+          <i class="fa-solid fa-chevron-right"></i>
+        </div>
       </div>
-      <span class="t-arrow">→</span>
+      <div class="flex flex-wrap gap-2 mb-6">
+        ${t.tags.map(tag => `<span class="text-[9px] font-bold text-muted uppercase tracking-widest border border-hairline px-2.5 py-1 rounded-full">${tag}</span>`).join("")}
+      </div>
+      <div class="flex items-center justify-between border-t border-hairline pt-4">
+        <div class="flex items-center gap-2">
+          <i class="fa-regular fa-calendar text-muted text-xs"></i>
+          <span class="text-[11px] text-muted">${t.exercicios.length} exercícios</span>
+        </div>
+      </div>
     `;
-    btn.addEventListener("click", () => {
-      if (isCardio) showScreen("cardio");
-      else startExecution(t.id);
-    });
-    list.appendChild(btn);
+    card.addEventListener("click", () => startExecution(t.id));
+    list.appendChild(card);
   });
 }
 
@@ -253,10 +236,8 @@ function startExecution(templateId) {
 function currentTemplate() {
   return TEMPLATES.find(t => t.id === state.execucao.templateId);
 }
-
 function currentExercise() {
-  const t = currentTemplate();
-  const exId = t.exercicios[state.execucao.exercicioIndex];
+  const exId = currentTemplate().exercicios[state.execucao.exercicioIndex];
   return { id: exId, ...EXERCISES[exId] };
 }
 
@@ -265,22 +246,13 @@ function renderExecucao() {
   const ex = currentExercise();
   const ec = state.execucao;
 
-  document.getElementById("execTemplateName").textContent = t.nome;
-
-  // barra de progresso por exercício
-  const progRow = document.getElementById("execProgress");
-  progRow.innerHTML = "";
-  t.exercicios.forEach((_, i) => {
-    const seg = document.createElement("div");
-    seg.className = "seg" + (i < ec.exercicioIndex ? " done" : i === ec.exercicioIndex ? " current" : "");
-    progRow.appendChild(seg);
-  });
-
-  document.getElementById("execIndex").textContent =
-    `${String(ec.exercicioIndex + 1).padStart(2, "0")} / ${String(t.exercicios.length).padStart(2, "0")}`;
+  document.getElementById("execIndex").textContent = `${ec.exercicioIndex + 1} / ${t.exercicios.length}`;
+  document.getElementById("execProgressBar").style.width = `${((ec.exercicioIndex) / t.exercicios.length) * 100}%`;
+  document.getElementById("execSetLabel").textContent = `Série ${ec.setAtual} de ${ec.totalSets}`;
   document.getElementById("execName").textContent = ex.nome;
-  document.getElementById("execPrimary").textContent = ex.primary.map(m => muscleLabels[m] || m).join(", ") || "—";
-  document.getElementById("execSecondary").textContent = ex.secondary.map(m => muscleLabels[m] || m).join(", ") || "—";
+
+  const focusText = [...ex.primary, ...ex.secondary].map(m => muscleLabels[m] || m).join(", ");
+  document.getElementById("execFocus").textContent = focusText || "—";
 
   renderMuscleModel(ex);
   renderSetCard();
@@ -303,28 +275,28 @@ function renderMuscleModel(ex) {
     type: hasBack ? "posterior" : "anterior",
     bodyColor: "#D8D3C8",
     highlightedColors: ["#E7B8A9", "#C9482F"],
-    style: { width: "68px" }
+    style: { width: "56px" }
   });
 }
 
 function renderSetCard() {
   const ec = state.execucao;
-  document.getElementById("setLabel").textContent = `Série ${ec.setAtual} de ${ec.totalSets}`;
   document.getElementById("weightValue").textContent = ec.weight;
   document.getElementById("repsValue").textContent = ec.reps;
 
-  const list = document.getElementById("setList");
-  list.innerHTML = "";
+  const history = document.getElementById("execHistory");
+  history.innerHTML = "";
   for (let i = 1; i <= ec.totalSets; i++) {
     const done = ec.setsFeitos[i - 1];
+    const isCurrent = i === ec.setAtual;
     const row = document.createElement("div");
-    row.className = "set-row" + (done ? " done" : "");
+    row.className = `flex items-center justify-between px-4 py-3 ${isCurrent ? "bg-claySoft/10" : ""}`;
     row.innerHTML = `
-      <span class="n">Série ${i}</span>
-      <span class="data">${done ? `${done.peso} kg × ${done.reps}` : (i === ec.setAtual ? "Em andamento" : "—")}</span>
-      <span class="check ${done ? "done" : "pending"}">${done ? "✓" : ""}</span>
+      <span class="text-xs font-bold ${done ? "text-emerald" : isCurrent ? "text-clay" : "text-muted"}">${i}</span>
+      <span class="text-xs font-medium text-ink">${done ? done.peso + " kg" : "--"}</span>
+      <span class="text-xs font-medium text-ink">${done ? done.reps : "--"}</span>
     `;
-    list.appendChild(row);
+    history.appendChild(row);
   }
 }
 
@@ -332,14 +304,15 @@ document.querySelectorAll(".stepper").forEach(btn => {
   btn.addEventListener("click", () => {
     const target = btn.dataset.target;
     const dir = parseInt(btn.dataset.dir, 10);
-    const ec = state.execucao;
-    if (target === "weight") ec.weight = Math.max(0, ec.weight + dir * 2.5);
-    if (target === "reps") ec.reps = Math.max(0, ec.reps + dir);
     if (target === "cardioMin") {
       const el = document.getElementById("cardioMinValue");
       el.textContent = Math.max(0, parseInt(el.textContent, 10) + dir * 5);
       return;
     }
+    const ec = state.execucao;
+    if (!ec) return;
+    if (target === "weight") ec.weight = Math.max(0, ec.weight + dir * 2.5);
+    if (target === "reps") ec.reps = Math.max(0, ec.reps + dir);
     renderSetCard();
   });
 });
@@ -347,9 +320,8 @@ document.querySelectorAll(".stepper").forEach(btn => {
 document.getElementById("confirmSetBtn").addEventListener("click", () => {
   const ec = state.execucao;
   ec.setsFeitos[ec.setAtual - 1] = { peso: ec.weight, reps: ec.reps };
-  if (ec.setAtual < ec.totalSets) {
-    ec.setAtual++;
-  }
+  if (ec.setAtual < ec.totalSets) ec.setAtual++;
+  document.getElementById("execSetLabel").textContent = `Série ${ec.setAtual} de ${ec.totalSets}`;
   renderSetCard();
 });
 
@@ -372,29 +344,54 @@ document.getElementById("nextExBtn").addEventListener("click", () => {
     ec.setsFeitos = [];
     renderExecucao();
   } else {
-    // fim do treino
     showScreen("hoje");
     renderHoje();
   }
 });
 
-document.getElementById("execCloseBtn").addEventListener("click", () => {
-  showScreen("treinos");
-});
+document.getElementById("execCloseBtn").addEventListener("click", () => showScreen("treinos"));
 
 /* =========================================================
    TELA "CARDIO"
    ========================================================= */
 
-document.querySelectorAll("#cardioTypeRow .chip").forEach(chip => {
-  chip.addEventListener("click", () => {
-    document.querySelectorAll("#cardioTypeRow .chip").forEach(c => c.classList.remove("active"));
-    chip.classList.add("active");
+document.querySelectorAll(".cardio-type-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".cardio-type-btn").forEach(b => {
+      b.classList.remove("border-2", "border-clay");
+      b.classList.add("border", "border-hairline");
+      b.querySelector("i").classList.remove("text-clay");
+      b.querySelector("i").classList.add("text-muted");
+      b.querySelector("span").classList.remove("text-ink");
+      b.querySelector("span").classList.add("text-muted");
+    });
+    btn.classList.remove("border", "border-hairline");
+    btn.classList.add("border-2", "border-clay");
+    btn.querySelector("i").classList.remove("text-muted");
+    btn.querySelector("i").classList.add("text-clay");
+    btn.querySelector("span").classList.remove("text-muted");
+    btn.querySelector("span").classList.add("text-ink");
+  });
+});
+
+document.querySelectorAll(".cardio-preset").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.getElementById("cardioMinValue").textContent = btn.dataset.min;
+  });
+});
+
+document.querySelectorAll(".intensity-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".intensity-btn").forEach(b => {
+      b.classList.remove("bg-paper", "text-ink");
+      b.classList.add("text-muted");
+    });
+    btn.classList.add("bg-paper", "text-ink");
+    btn.classList.remove("text-muted");
   });
 });
 
 document.getElementById("cardioCloseBtn").addEventListener("click", () => showScreen("hoje"));
-
 document.getElementById("confirmCardioBtn").addEventListener("click", () => {
   // aqui entraria o salvamento real (Firestore)
   showScreen("hoje");
@@ -414,101 +411,129 @@ function renderProgressoOptions() {
     opt.textContent = EXERCISES[exId]?.nome || exId;
     select.appendChild(opt);
   });
-  renderChart(select.value);
+  renderProgresso(select.value);
 }
 
-document.getElementById("progressExerciseSelect").addEventListener("change", e => {
-  renderChart(e.target.value);
-});
+document.getElementById("progressExerciseSelect").addEventListener("change", e => renderProgresso(e.target.value));
 
-function renderChart(exId) {
+function renderProgresso(exId) {
   const p = currentProfile();
   const dados = p.historico[exId] || [];
-  const svg = document.getElementById("chartSvg");
-  svg.innerHTML = "";
-
   if (dados.length === 0) return;
 
   const cargas = dados.map(d => d.carga);
-  const min = Math.min(...cargas);
+  const last = cargas[cargas.length - 1];
   const max = Math.max(...cargas);
-  const pad = 20;
-  const w = 300, h = 140;
+  const avg = (cargas.reduce((a, b) => a + b, 0) / cargas.length).toFixed(1);
+  const change = (((last - cargas[0]) / cargas[0]) * 100).toFixed(0);
 
-  const points = dados.map((d, i) => {
-    const x = pad + (i / (dados.length - 1 || 1)) * (w - pad * 2);
-    const y = h - pad - ((d.carga - min) / (max - min || 1)) * (h - pad * 2);
-    return { x, y, ...d };
+  document.getElementById("statLast").innerHTML = `${last} <span class="text-xs font-sans text-muted">kg</span>`;
+  document.getElementById("statMax").innerHTML = `${max} <span class="text-xs font-sans text-muted">kg</span>`;
+  document.getElementById("statAvg").innerHTML = `${avg} <span class="text-xs font-sans text-muted">kg</span>`;
+  document.getElementById("statSessions").textContent = dados.length;
+  document.getElementById("statChange").textContent = `${change >= 0 ? "+" : ""}${change}% no período`;
+
+  const records = document.getElementById("recordsList");
+  records.innerHTML = "";
+  p.recordes.forEach(r => {
+    const el = document.createElement("div");
+    el.className = "bg-white/50 border border-hairline rounded-2xl p-4 flex items-center justify-between";
+    el.innerHTML = `
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 bg-claySoft/20 rounded-full flex items-center justify-center text-clay">
+          <i class="fa-solid fa-trophy text-xs"></i>
+        </div>
+        <div>
+          <p class="text-xs font-bold">${EXERCISES[r.exercicio]?.nome || r.exercicio}</p>
+          <p class="text-[10px] text-muted">${r.data} • ${r.valor}</p>
+        </div>
+      </div>
+      <i class="fa-solid fa-chevron-right text-hairline text-xs"></i>
+    `;
+    records.appendChild(el);
   });
 
-  const pathD = points.map((p, i) => (i === 0 ? "M" : "L") + p.x + " " + p.y).join(" ");
-
-  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-  path.setAttribute("d", pathD);
-  path.setAttribute("fill", "none");
-  path.setAttribute("stroke", "#C9482F");
-  path.setAttribute("stroke-width", "2.5");
-  path.setAttribute("stroke-linecap", "round");
-  path.setAttribute("stroke-linejoin", "round");
-  svg.appendChild(path);
-
-  points.forEach(p => {
-    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-    circle.setAttribute("cx", p.x);
-    circle.setAttribute("cy", p.y);
-    circle.setAttribute("r", "3.5");
-    circle.setAttribute("fill", "#C9482F");
-    svg.appendChild(circle);
-  });
-
-  document.getElementById("lastLoad").textContent = cargas[cargas.length - 1] + " kg";
-  document.getElementById("maxLoad").textContent = max + " kg";
+  const trace = {
+    x: dados.map(d => d.data),
+    y: cargas,
+    type: 'scatter',
+    mode: 'lines+markers',
+    line: { color: '#C9482F', width: 3, shape: 'spline' },
+    marker: { color: '#C9482F', size: 8, line: { color: 'white', width: 2 } },
+    fill: 'tozeroy',
+    fillcolor: 'rgba(201, 72, 47, 0.05)'
+  };
+  const layout = {
+    margin: { t: 10, r: 10, b: 30, l: 30 },
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    xaxis: { showgrid: false, tickfont: { size: 9, color: '#8A8378', family: 'Inter' } },
+    yaxis: { showgrid: true, gridcolor: '#D8D3C8', tickfont: { size: 9, color: '#8A8378', family: 'Inter' }, zeroline: false },
+    showlegend: false
+  };
+  Plotly.newPlot('progressionChart', [trace], layout, { responsive: true, displayModeBar: false, displaylogo: false });
 }
 
 /* =========================================================
    TELA "CALENDÁRIO"
    ========================================================= */
 
+const MONTH_NAMES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+
+document.getElementById("calPrevBtn").addEventListener("click", () => {
+  state.calMonth--;
+  if (state.calMonth < 0) { state.calMonth = 11; state.calYear--; }
+  renderCalendario();
+});
+document.getElementById("calNextBtn").addEventListener("click", () => {
+  state.calMonth++;
+  if (state.calMonth > 11) { state.calMonth = 0; state.calYear++; }
+  renderCalendario();
+});
+
 function renderCalendario() {
   const p = currentProfile();
+  document.getElementById("calMonthLabel").textContent = `${MONTH_NAMES[state.calMonth]} ${state.calYear}`;
+
   const grid = document.getElementById("calGrid");
   grid.innerHTML = "";
 
-  ["D", "S", "T", "Q", "Q", "S", "S"].forEach(d => {
-    const head = document.createElement("div");
-    head.className = "cal-cell head";
-    head.textContent = d;
-    grid.appendChild(head);
-  });
-
-  // agosto 2026 fake: começa numa sábado (dia 1), 31 dias
-  const firstWeekday = 6; // sáb
-  const daysInMonth = 31;
+  const firstDay = new Date(state.calYear, state.calMonth, 1).getDay();
+  const daysInMonth = new Date(state.calYear, state.calMonth + 1, 0).getDate();
+  const isCurrentMonth = state.calMonth === 7 && state.calYear === 2026;
   const today = 16;
 
-  for (let i = 0; i < firstWeekday; i++) {
-    grid.appendChild(document.createElement("div"));
-  }
+  for (let i = 0; i < firstDay; i++) grid.appendChild(document.createElement("span"));
 
   for (let day = 1; day <= daysInMonth; day++) {
-    const cell = document.createElement("div");
-    const trained = p.diasTreinados.includes(day);
-    cell.className = "cal-cell" + (trained ? " trained" : "") + (day === today ? " today" : "");
+    const trained = isCurrentMonth && p.diasTreinados.includes(day);
+    const isToday = isCurrentMonth && day === today;
+    const cell = document.createElement("span");
     cell.textContent = day;
+    cell.className = "text-center py-3 text-xs font-medium rounded-full relative cursor-default " +
+      (isToday ? "font-bold bg-clay text-white shadow-lg shadow-clay/20" :
+       trained ? "bg-clay/5 text-clay" : "");
     if (trained) {
-      cell.addEventListener("click", () => {
-        document.getElementById("dayDetail").style.display = "block";
-        document.getElementById("dayDetailDate").textContent = `${day} de agosto`;
-        document.getElementById("dayDetailContent").textContent =
-          "Treino concluído — detalhes viriam do histórico salvo no Firestore.";
-      });
+      cell.classList.add("cursor-pointer");
+      cell.innerHTML += `<div class="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 ${isToday ? "bg-white" : "bg-clay"} rounded-full"></div>`;
+      cell.addEventListener("click", () => showDayDetail(day));
     }
     grid.appendChild(cell);
   }
+
+  document.getElementById("dayDetailWrap").style.display = "none";
+}
+
+function showDayDetail(day) {
+  const template = TEMPLATES.find(t => t.id === currentProfile().treinoHojeId);
+  document.getElementById("dayDetailWrap").style.display = "block";
+  document.getElementById("dayDetailTitle").textContent = `Detalhes: ${day} de ${MONTH_NAMES[state.calMonth]}`;
+  document.getElementById("dayDetailName").textContent = template.nome;
+  document.getElementById("dayDetailMeta").textContent = `${template.exercicios.length} exercícios • ~50 min`;
 }
 
 /* =========================================================
-   RENDER GERAL (ao trocar de perfil, por exemplo)
+   RENDER GERAL
    ========================================================= */
 
 function renderAll() {
