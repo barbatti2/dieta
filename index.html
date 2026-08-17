@@ -6,7 +6,7 @@
   </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Projeto Dieta Premium</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -38,16 +38,19 @@
   </script>
   <style>
     ::-webkit-scrollbar { width: 0; height: 0; display: none; }
+    * { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+    body { user-select: none; }
+    input, textarea { user-select: text; }
     .serif-number { font-family: 'Fraunces', serif; }
     .screen { display: none; }
-    .screen.active { display: block; }
+    .screen.active { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
     .profile-dropdown { display: none; }
     .profile-dropdown.open { display: flex; }
   </style>
 </head>
-<body class="bg-paper text-ink font-sans antialiased">
+<body class="bg-[#EDE8DF] text-ink font-sans antialiased min-h-screen flex items-center justify-center py-6">
 
-  <div class="w-full max-w-[375px] mx-auto min-h-screen bg-paper relative flex flex-col">
+  <div class="w-full max-w-[375px] mx-auto min-h-[calc(100vh-48px)] sm:min-h-0 sm:h-[780px] bg-paper relative flex flex-col sm:rounded-[2.5rem] sm:shadow-2xl sm:shadow-black/10 overflow-hidden">
 
     <!-- ===================== SELETOR DE PERFIL (dropdown compartilhado) ===================== -->
     <div id="profileDropdown" class="profile-dropdown flex-col gap-1 bg-white border border-hairline rounded-2xl p-2 shadow-lg absolute top-24 right-6 z-50 w-44">
@@ -63,10 +66,10 @@
 
     <!-- ===================== HOJE ===================== -->
     <section class="screen active" data-screen="hoje">
-      <header class="px-6 pt-12 pb-4 flex justify-between items-center bg-paper sticky top-0 z-30">
+      <header class="flex-shrink-0 px-6 pt-12 pb-4 flex justify-between items-center bg-paper sticky top-0 z-30">
         <div>
           <p class="text-[10px] uppercase tracking-[0.2em] text-muted mb-0.5" id="todayDate">Segunda, 14 Out</p>
-          <h1 class="font-serif text-2xl">Hoje</h1>
+          <h1 class="font-serif text-xl">Hoje</h1>
         </div>
         <button id="profileChip" class="flex items-center bg-white border border-hairline p-1 rounded-full shadow-sm">
           <span class="w-8 h-8 rounded-full ring-2 ring-clay ring-offset-2 ring-offset-white overflow-hidden">
@@ -78,12 +81,12 @@
         </button>
       </header>
 
-      <main class="flex-1 px-6 pb-32 space-y-8">
-        <section class="bg-clay text-white rounded-[2rem] p-8 shadow-xl shadow-clay/10 relative overflow-hidden">
+      <main class="flex-1 min-h-0 overflow-y-auto px-6 pb-32 space-y-8">
+        <section class="bg-clay text-white rounded-2xl p-4 shadow-xl shadow-clay/10 relative overflow-hidden">
           <div class="relative z-10">
             <p class="text-[10px] uppercase tracking-[0.25em] text-white/70 mb-2">Constância</p>
             <div class="flex items-baseline gap-2">
-              <span class="font-serif text-6xl leading-none" id="streakCount">12</span>
+              <span class="font-serif text-4xl leading-none" id="streakCount">12</span>
               <span class="text-lg font-medium opacity-80">dias</span>
             </div>
             <p class="mt-4 text-xs font-medium text-white/80 max-w-[160px]">Você está no seu melhor ritmo este mês. Continue assim!</p>
@@ -97,30 +100,35 @@
             <h2 class="font-serif text-xl">Treino do Dia</h2>
             <span class="text-[10px] font-bold text-emerald uppercase tracking-widest bg-emerald/5 px-2.5 py-1 rounded-full" id="todayFichaLabel">Ficha A</span>
           </div>
-          <div class="bg-card border border-hairline rounded-[2rem] p-6 shadow-sm">
+          <div class="bg-card border border-hairline rounded-2xl p-4 shadow-sm">
             <div class="flex items-start justify-between mb-6">
               <div class="space-y-1">
                 <h3 class="font-bold text-lg text-ink" id="todayWorkoutName">Peito e Tríceps</h3>
                 <p class="text-xs text-muted" id="todayWorkoutMeta">6 exercícios • 50 min</p>
               </div>
-              <div class="w-12 h-12 bg-paper rounded-2xl flex items-center justify-center text-clay">
+              <div class="w-10 h-10 bg-paper rounded-xl flex items-center justify-center text-clay">
                 <i class="fa-solid fa-dumbbell text-xl"></i>
               </div>
             </div>
-            <button id="startTodayBtn" class="w-full bg-ink text-white font-medium py-4 rounded-2xl hover:bg-black transition-all active:scale-[0.98]">
-              Iniciar Treino
-            </button>
+            <div class="flex gap-2">
+              <button id="startTodayBtn" class="flex-1 bg-ink text-white font-medium py-3 rounded-2xl hover:bg-black transition-all active:scale-[0.98]">
+                Iniciar Treino
+              </button>
+              <button id="editTodayBtn" class="w-12 flex-shrink-0 border border-hairline rounded-2xl flex items-center justify-center text-muted hover:text-clay hover:border-clay transition-all">
+                <i class="fa-solid fa-pen"></i>
+              </button>
+            </div>
           </div>
         </section>
 
         <section class="space-y-4">
           <h2 class="font-serif text-xl">Últimos 7 dias</h2>
-          <div class="bg-card border border-hairline rounded-[2rem] p-6 shadow-sm flex justify-between items-center" id="weekStrip"></div>
+          <div class="bg-card border border-hairline rounded-2xl p-4 shadow-sm flex justify-between items-center" id="weekStrip"></div>
         </section>
 
-        <section class="bg-emerald text-white rounded-[2rem] p-6 shadow-xl shadow-emerald/10 flex items-center justify-between">
+        <section class="bg-emerald text-white rounded-2xl p-4 shadow-xl shadow-emerald/10 flex items-center justify-between">
           <div class="flex items-center gap-4">
-            <div class="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center text-white">
+            <div class="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-white">
               <i class="fa-solid fa-person-running text-xl"></i>
             </div>
             <div>
@@ -137,8 +145,8 @@
 
     <!-- ===================== TREINOS (lista) ===================== -->
     <section class="screen" data-screen="treinos">
-      <header class="px-6 pt-12 pb-4 flex justify-between items-center bg-paper sticky top-0 z-30">
-        <h1 class="font-serif text-2xl">Treinos</h1>
+      <header class="flex-shrink-0 px-6 pt-12 pb-4 flex justify-between items-center bg-paper sticky top-0 z-30">
+        <h1 class="font-serif text-xl">Treinos</h1>
         <button class="profile-chip-btn flex items-center bg-white border border-hairline p-1 rounded-full shadow-sm">
           <span class="w-8 h-8 rounded-full ring-2 ring-clay ring-offset-2 ring-offset-white overflow-hidden">
             <img class="avatar-mirror w-full h-full object-cover" src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg">
@@ -146,19 +154,38 @@
         </button>
       </header>
 
-      <main class="flex-1 px-6 pb-32 space-y-6">
-        <div class="relative">
-          <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-muted text-sm"></i>
-          <input type="text" placeholder="Buscar treino" class="w-full bg-white border border-hairline rounded-2xl pl-11 pr-4 py-4 text-sm outline-none focus:border-clay/40 transition-colors placeholder:text-muted/70">
-        </div>
-
+      <main class="flex-1 min-h-0 overflow-y-auto px-6 pb-32 space-y-6">
         <section class="space-y-4" id="templateList"></section>
       </main>
     </section>
 
+    <!-- ===================== EDITAR EXERCÍCIOS DO TREINO ===================== -->
+    <section class="screen" data-screen="editor">
+      <header class="flex-shrink-0 px-6 pt-12 pb-4 flex items-center gap-3 bg-paper">
+        <button id="editorBackBtn" class="w-9 h-9 rounded-full border border-hairline flex items-center justify-center text-muted flex-shrink-0">
+          <i class="fa-solid fa-arrow-left"></i>
+        </button>
+        <div class="min-w-0">
+          <p class="text-[10px] uppercase tracking-[0.2em] text-muted mb-0.5" id="editorFicha">Ficha A</p>
+          <h1 class="font-serif text-xl truncate" id="editorTitle">Peito e Tríceps</h1>
+        </div>
+      </header>
+
+      <main class="flex-1 min-h-0 overflow-y-auto px-6 pb-6 space-y-2">
+        <p class="text-[10px] font-bold text-muted uppercase tracking-[0.2em] px-2 pt-2 pb-1">Toque para incluir ou remover</p>
+        <div id="editorExerciseList" class="space-y-2"></div>
+      </main>
+
+      <footer class="flex-shrink-0 px-6 py-4 border-t border-hairline bg-paper">
+        <button id="editorSaveBtn" class="w-full bg-ink text-white font-medium py-3 rounded-2xl hover:bg-black transition-all active:scale-[0.98]">
+          Salvar treino
+        </button>
+      </footer>
+    </section>
+
     <!-- ===================== EXECUÇÃO ===================== -->
     <section class="screen" data-screen="execucao">
-      <header class="px-6 pt-12 pb-4 bg-paper sticky top-0 z-30">
+      <header class="flex-shrink-0 px-6 pt-12 pb-4 bg-paper sticky top-0 z-30">
         <div class="flex items-center justify-between mb-4">
           <button id="execCloseBtn" class="text-muted hover:text-ink transition-colors"><i class="fa-solid fa-xmark text-lg"></i></button>
           <div class="flex-1 px-8">
@@ -170,20 +197,20 @@
         </div>
         <div class="text-center">
           <span class="text-[10px] font-bold text-clay uppercase tracking-[0.2em] mb-1 block" id="execSetLabel">Série 1 de 4</span>
-          <h1 class="font-serif text-2xl" id="execName">Agachamento Livre</h1>
+          <h1 class="font-serif text-xl" id="execName">Agachamento Livre</h1>
         </div>
       </header>
 
-      <main class="flex-1 px-6 pb-40 space-y-8">
-        <section class="bg-card border border-hairline rounded-[2.5rem] p-8 shadow-sm flex flex-col items-center gap-6">
-          <div class="relative w-full aspect-video rounded-[1.5rem] overflow-hidden bg-paper flex items-center justify-center border border-hairline">
+      <main class="flex-1 min-h-0 overflow-y-auto px-6 pb-40 space-y-8">
+        <section class="bg-card border border-hairline rounded-[1.75rem] p-4 shadow-sm flex flex-col items-center gap-4">
+          <div class="relative w-full aspect-video rounded-xl overflow-hidden bg-paper flex items-center justify-center border border-hairline">
             <i class="fa-solid fa-play text-hairline text-4xl"></i>
             <div class="absolute bottom-4 left-4 bg-white/80 backdrop-blur-md px-3 py-1 rounded-full border border-hairline">
               <span class="text-[9px] font-bold text-ink uppercase tracking-wider">Ver tutorial</span>
             </div>
           </div>
           <div class="flex items-center gap-4 w-full border-t border-hairline pt-6">
-            <div class="w-16 h-16 flex items-center justify-center flex-shrink-0" id="execModel"></div>
+            <div class="w-14 h-14 flex items-center justify-center flex-shrink-0" id="execModel"></div>
             <div>
               <p class="text-[10px] font-bold text-muted uppercase tracking-widest leading-tight">Foco muscular</p>
               <p class="text-sm font-bold text-ink" id="execFocus">Quadríceps, Glúteo</p>
@@ -192,19 +219,19 @@
         </section>
 
         <section class="grid grid-cols-2 gap-4">
-          <div class="bg-card border border-hairline rounded-[2rem] p-6 shadow-sm">
+          <div class="bg-card border border-hairline rounded-2xl p-4 shadow-sm">
             <p class="text-[10px] font-bold text-muted uppercase tracking-widest mb-4 text-center">Carga (kg)</p>
             <div class="flex items-center justify-between">
               <button class="stepper w-10 h-10 border border-hairline rounded-full flex items-center justify-center text-muted hover:border-clay hover:text-clay transition-all active:scale-90" data-target="weight" data-dir="-1"><i class="fa-solid fa-minus"></i></button>
-              <span class="font-serif text-3xl" id="weightValue">40</span>
+              <span class="font-serif text-2xl" id="weightValue">40</span>
               <button class="stepper w-10 h-10 border border-hairline rounded-full flex items-center justify-center text-muted hover:border-clay hover:text-clay transition-all active:scale-90" data-target="weight" data-dir="1"><i class="fa-solid fa-plus"></i></button>
             </div>
           </div>
-          <div class="bg-card border border-hairline rounded-[2rem] p-6 shadow-sm">
+          <div class="bg-card border border-hairline rounded-2xl p-4 shadow-sm">
             <p class="text-[10px] font-bold text-muted uppercase tracking-widest mb-4 text-center">Reps</p>
             <div class="flex items-center justify-between">
               <button class="stepper w-10 h-10 border border-hairline rounded-full flex items-center justify-center text-muted hover:border-clay hover:text-clay transition-all active:scale-90" data-target="reps" data-dir="-1"><i class="fa-solid fa-minus"></i></button>
-              <span class="font-serif text-3xl" id="repsValue">10</span>
+              <span class="font-serif text-2xl" id="repsValue">10</span>
               <button class="stepper w-10 h-10 border border-hairline rounded-full flex items-center justify-center text-muted hover:border-clay hover:text-clay transition-all active:scale-90" data-target="reps" data-dir="1"><i class="fa-solid fa-plus"></i></button>
             </div>
           </div>
@@ -223,8 +250,8 @@
         </section>
       </main>
 
-      <footer class="fixed bottom-0 inset-x-0 bg-white/80 backdrop-blur-xl border-t border-hairline px-6 pt-4 pb-8 flex flex-col gap-4 z-50 max-w-[375px] mx-auto">
-        <button id="confirmSetBtn" class="w-full bg-clay text-white font-medium py-4 rounded-2xl hover:bg-[#b33e27] transition-all active:scale-[0.98] shadow-lg shadow-clay/20 flex items-center justify-center gap-3">
+      <footer class="flex-shrink-0 bg-white/80 backdrop-blur-xl border-t border-hairline px-6 pt-4 pb-8 flex flex-col gap-4 z-50">
+        <button id="confirmSetBtn" class="w-full bg-clay text-white font-medium py-3 rounded-2xl hover:bg-[#b33e27] transition-all active:scale-[0.98] shadow-lg shadow-clay/20 flex items-center justify-center gap-3">
           <i class="fa-solid fa-check"></i>
           Concluir Série
         </button>
@@ -241,28 +268,28 @@
 
     <!-- ===================== CARDIO ===================== -->
     <section class="screen" data-screen="cardio">
-      <header class="px-6 pt-12 pb-4 flex justify-between items-center bg-paper sticky top-0 z-30">
-        <h1 class="font-serif text-2xl">Cardio</h1>
+      <header class="flex-shrink-0 px-6 pt-12 pb-4 flex justify-between items-center bg-paper sticky top-0 z-30">
+        <h1 class="font-serif text-xl">Cardio</h1>
         <button id="cardioCloseBtn" class="w-9 h-9 rounded-full border border-hairline flex items-center justify-center text-muted"><i class="fa-solid fa-xmark"></i></button>
       </header>
 
-      <main class="flex-1 px-6 pb-32 space-y-10">
+      <main class="flex-1 min-h-0 overflow-y-auto px-6 pb-32 space-y-10">
         <section class="space-y-4">
           <h2 class="text-[10px] font-bold text-muted uppercase tracking-[0.2em] px-2">Tipo de Atividade</h2>
           <div class="grid grid-cols-2 gap-3" id="cardioTypeRow">
-            <button class="cardio-type-btn bg-card border-2 border-clay rounded-2xl p-6 flex flex-col items-center gap-3 shadow-sm transition-all" data-type="esteira">
+            <button class="cardio-type-btn bg-card border-2 border-clay rounded-2xl p-4 flex flex-col items-center gap-3 shadow-sm transition-all" data-type="esteira">
               <i class="fa-solid fa-person-walking text-2xl text-clay"></i>
               <span class="text-xs font-bold text-ink uppercase tracking-widest">Esteira</span>
             </button>
-            <button class="cardio-type-btn bg-card border border-hairline rounded-2xl p-6 flex flex-col items-center gap-3 shadow-sm hover:border-clay/30 transition-all" data-type="bike">
+            <button class="cardio-type-btn bg-card border border-hairline rounded-2xl p-4 flex flex-col items-center gap-3 shadow-sm hover:border-clay/30 transition-all" data-type="bike">
               <i class="fa-solid fa-person-biking text-2xl text-muted"></i>
               <span class="text-xs font-bold text-muted uppercase tracking-widest">Bike</span>
             </button>
-            <button class="cardio-type-btn bg-card border border-hairline rounded-2xl p-6 flex flex-col items-center gap-3 shadow-sm hover:border-clay/30 transition-all" data-type="eliptico">
+            <button class="cardio-type-btn bg-card border border-hairline rounded-2xl p-4 flex flex-col items-center gap-3 shadow-sm hover:border-clay/30 transition-all" data-type="eliptico">
               <i class="fa-solid fa-person-running text-2xl text-muted"></i>
               <span class="text-xs font-bold text-muted uppercase tracking-widest">Elíptico</span>
             </button>
-            <button class="cardio-type-btn bg-card border border-hairline rounded-2xl p-6 flex flex-col items-center gap-3 shadow-sm hover:border-clay/30 transition-all" data-type="outro">
+            <button class="cardio-type-btn bg-card border border-hairline rounded-2xl p-4 flex flex-col items-center gap-3 shadow-sm hover:border-clay/30 transition-all" data-type="outro">
               <i class="fa-solid fa-plus text-2xl text-muted"></i>
               <span class="text-xs font-bold text-muted uppercase tracking-widest">Outro</span>
             </button>
@@ -271,14 +298,14 @@
 
         <section class="space-y-4">
           <h2 class="text-[10px] font-bold text-muted uppercase tracking-[0.2em] px-2">Tempo (minutos)</h2>
-          <div class="bg-card border border-hairline rounded-[2.5rem] p-10 shadow-sm flex flex-col items-center gap-6">
-            <div class="flex items-center gap-8">
-              <button class="stepper w-12 h-12 border border-hairline rounded-full flex items-center justify-center text-muted hover:border-clay hover:text-clay transition-all active:scale-90" data-target="cardioMin" data-dir="-1"><i class="fa-solid fa-minus text-lg"></i></button>
+          <div class="bg-card border border-hairline rounded-[1.75rem] p-4 shadow-sm flex flex-col items-center gap-4">
+            <div class="flex items-center gap-4">
+              <button class="stepper w-10 h-10 border border-hairline rounded-full flex items-center justify-center text-muted hover:border-clay hover:text-clay transition-all active:scale-90" data-target="cardioMin" data-dir="-1"><i class="fa-solid fa-minus text-lg"></i></button>
               <div class="flex flex-col items-center">
-                <span class="font-serif text-6xl text-ink leading-none" id="cardioMinValue">45</span>
+                <span class="font-serif text-4xl text-ink leading-none" id="cardioMinValue">45</span>
                 <span class="text-[10px] font-bold text-muted uppercase tracking-widest mt-2">minutos</span>
               </div>
-              <button class="stepper w-12 h-12 border border-hairline rounded-full flex items-center justify-center text-muted hover:border-clay hover:text-clay transition-all active:scale-90" data-target="cardioMin" data-dir="1"><i class="fa-solid fa-plus text-lg"></i></button>
+              <button class="stepper w-10 h-10 border border-hairline rounded-full flex items-center justify-center text-muted hover:border-clay hover:text-clay transition-all active:scale-90" data-target="cardioMin" data-dir="1"><i class="fa-solid fa-plus text-lg"></i></button>
             </div>
             <div class="flex gap-2 w-full mt-4">
               <button class="cardio-preset flex-1 bg-paper border border-hairline py-2 rounded-full text-[10px] font-bold text-muted uppercase tracking-tighter hover:bg-claySoft/20 transition-all" data-min="15">15 min</button>
@@ -297,7 +324,7 @@
           </div>
         </section>
 
-        <button id="confirmCardioBtn" class="w-full bg-ink text-white font-medium py-5 rounded-[2rem] hover:bg-black transition-all active:scale-[0.98] shadow-xl shadow-ink/10">
+        <button id="confirmCardioBtn" class="w-full bg-ink text-white font-medium py-3.5 rounded-2xl hover:bg-black transition-all active:scale-[0.98] shadow-xl shadow-ink/10">
           Salvar Cardio
         </button>
       </main>
@@ -305,8 +332,8 @@
 
     <!-- ===================== PROGRESSO ===================== -->
     <section class="screen" data-screen="progresso">
-      <header class="px-6 pt-12 pb-4 flex justify-between items-center bg-paper sticky top-0 z-30">
-        <h1 class="font-serif text-2xl">Progresso</h1>
+      <header class="flex-shrink-0 px-6 pt-12 pb-4 flex justify-between items-center bg-paper sticky top-0 z-30">
+        <h1 class="font-serif text-xl">Progresso</h1>
         <button class="profile-chip-btn flex items-center bg-white border border-hairline p-1 rounded-full shadow-sm">
           <span class="w-8 h-8 rounded-full ring-2 ring-clay ring-offset-2 ring-offset-white overflow-hidden">
             <img class="avatar-mirror w-full h-full object-cover" src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg">
@@ -314,35 +341,35 @@
         </button>
       </header>
 
-      <main class="flex-1 px-6 pb-32 space-y-8">
+      <main class="flex-1 min-h-0 overflow-y-auto px-6 pb-32 space-y-8">
         <section class="space-y-4">
           <h2 class="text-[10px] font-bold text-muted uppercase tracking-[0.2em] px-2">Análise de Performance</h2>
           <div class="relative">
-            <select id="progressExerciseSelect" class="w-full bg-white border border-hairline rounded-2xl px-6 py-4 text-sm font-bold appearance-none outline-none focus:border-clay/30 shadow-sm"></select>
+            <select id="progressExerciseSelect" class="w-full bg-white border border-hairline rounded-2xl px-6 py-3 text-sm font-bold appearance-none outline-none focus:border-clay/30 shadow-sm"></select>
             <i class="fa-solid fa-chevron-down absolute right-6 top-1/2 -translate-y-1/2 text-muted pointer-events-none"></i>
           </div>
         </section>
 
         <section class="grid grid-cols-2 gap-4">
-          <div class="bg-card border border-hairline rounded-[1.5rem] p-5 shadow-sm">
+          <div class="bg-card border border-hairline rounded-xl p-4 shadow-sm">
             <p class="text-[9px] font-bold text-muted uppercase tracking-widest mb-1">Última Carga</p>
-            <p class="font-serif text-2xl" id="statLast">— <span class="text-xs font-sans text-muted">kg</span></p>
+            <p class="font-serif text-xl" id="statLast">— <span class="text-xs font-sans text-muted">kg</span></p>
           </div>
-          <div class="bg-card border border-hairline rounded-[1.5rem] p-5 shadow-sm">
+          <div class="bg-card border border-hairline rounded-xl p-4 shadow-sm">
             <p class="text-[9px] font-bold text-muted uppercase tracking-widest mb-1">Recorde Pessoal</p>
-            <p class="font-serif text-2xl text-clay" id="statMax">— <span class="text-xs font-sans text-muted">kg</span></p>
+            <p class="font-serif text-xl text-clay" id="statMax">— <span class="text-xs font-sans text-muted">kg</span></p>
           </div>
-          <div class="bg-card border border-hairline rounded-[1.5rem] p-5 shadow-sm">
+          <div class="bg-card border border-hairline rounded-xl p-4 shadow-sm">
             <p class="text-[9px] font-bold text-muted uppercase tracking-widest mb-1">Média</p>
-            <p class="font-serif text-2xl" id="statAvg">— <span class="text-xs font-sans text-muted">kg</span></p>
+            <p class="font-serif text-xl" id="statAvg">— <span class="text-xs font-sans text-muted">kg</span></p>
           </div>
-          <div class="bg-card border border-hairline rounded-[1.5rem] p-5 shadow-sm">
+          <div class="bg-card border border-hairline rounded-xl p-4 shadow-sm">
             <p class="text-[9px] font-bold text-muted uppercase tracking-widest mb-1">Sessões</p>
-            <p class="font-serif text-2xl" id="statSessions">—</p>
+            <p class="font-serif text-xl" id="statSessions">—</p>
           </div>
         </section>
 
-        <section class="bg-card border border-hairline rounded-[2rem] p-6 shadow-sm">
+        <section class="bg-card border border-hairline rounded-2xl p-4 shadow-sm">
           <div class="flex items-center justify-between mb-6">
             <h3 class="text-sm font-bold text-ink">Evolução de Carga</h3>
             <span class="text-[9px] font-bold text-emerald uppercase tracking-tighter bg-emerald/5 px-2 py-1 rounded-md" id="statChange">—</span>
@@ -359,8 +386,8 @@
 
     <!-- ===================== CALENDÁRIO ===================== -->
     <section class="screen" data-screen="calendario">
-      <header class="px-6 pt-12 pb-4 flex justify-between items-center bg-paper sticky top-0 z-30">
-        <h1 class="font-serif text-2xl">Calendário</h1>
+      <header class="flex-shrink-0 px-6 pt-12 pb-4 flex justify-between items-center bg-paper sticky top-0 z-30">
+        <h1 class="font-serif text-xl">Calendário</h1>
         <button class="profile-chip-btn flex items-center bg-white border border-hairline p-1 rounded-full shadow-sm">
           <span class="w-8 h-8 rounded-full ring-2 ring-clay ring-offset-2 ring-offset-white overflow-hidden">
             <img class="avatar-mirror w-full h-full object-cover" src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg">
@@ -368,14 +395,14 @@
         </button>
       </header>
 
-      <main class="flex-1 px-6 pb-32 space-y-8">
+      <main class="flex-1 min-h-0 overflow-y-auto px-6 pb-32 space-y-8">
         <div class="flex items-center justify-between px-2">
           <button id="calPrevBtn" class="text-muted hover:text-ink"><i class="fa-solid fa-chevron-left"></i></button>
           <h2 class="font-serif text-lg" id="calMonthLabel">Agosto 2026</h2>
           <button id="calNextBtn" class="text-muted hover:text-ink"><i class="fa-solid fa-chevron-right"></i></button>
         </div>
 
-        <section class="bg-card border border-hairline rounded-[2.5rem] p-6 shadow-sm">
+        <section class="bg-card border border-hairline rounded-[1.75rem] p-4 shadow-sm">
           <div class="grid grid-cols-7 mb-4">
             <span class="text-center text-[9px] font-bold text-muted uppercase">Dom</span>
             <span class="text-center text-[9px] font-bold text-muted uppercase">Seg</span>
@@ -390,7 +417,7 @@
 
         <section class="space-y-4" id="dayDetailWrap" style="display:none;">
           <h3 class="text-[10px] font-bold text-muted uppercase tracking-[0.2em] px-2" id="dayDetailTitle">Detalhes</h3>
-          <div class="bg-card border border-hairline rounded-[2rem] p-6 shadow-sm">
+          <div class="bg-card border border-hairline rounded-2xl p-4 shadow-sm">
             <div class="flex items-start gap-4">
               <div class="w-10 h-10 bg-claySoft/10 rounded-2xl flex items-center justify-center text-clay">
                 <i class="fa-solid fa-dumbbell"></i>
@@ -409,7 +436,7 @@
     </section>
 
     <!-- ===================== BOTTOM NAV (único, compartilhado) ===================== -->
-    <nav class="fixed bottom-0 inset-x-0 bg-white/80 backdrop-blur-xl border-t border-hairline px-6 pt-3 pb-8 flex justify-between items-center z-50 max-w-[375px] mx-auto">
+    <nav class="flex-shrink-0 bg-white/80 backdrop-blur-xl border-t border-hairline px-6 pt-3 pb-8 flex justify-between items-center z-50">
       <button class="nav-item flex flex-col items-center gap-1.5 text-clay" data-nav="hoje">
         <div class="w-5 h-5 flex items-center justify-center"><i class="fa-solid fa-house"></i></div>
         <span class="text-[10px] font-bold uppercase tracking-widest">Hoje</span>
