@@ -1,20 +1,10 @@
 import createBodyHighlighter from 'https://esm.sh/body-highlighter';
+import { EXERCISES, GROUPS } from './exercises.js';
 
 /* =========================================================
    DADOS FAKE — isso tudo depois vira leitura/escrita no Firestore
+   (o catálogo de exercícios agora mora em exercises.js)
    ========================================================= */
-
-const EXERCISES = {
-  agachamento:    { nome: "Agachamento Livre", primary: ["quadriceps"], secondary: ["gluteal", "hamstring"] },
-  legPress:       { nome: "Leg Press 45°", primary: ["quadriceps"], secondary: ["gluteal"] },
-  cadeiraFlexora: { nome: "Cadeira Flexora", primary: ["hamstring"], secondary: [] },
-  remadaCurvada:  { nome: "Remada Curvada", primary: ["upper-back"], secondary: ["biceps", "back-deltoids"] },
-  puxadaFrente:   { nome: "Puxada pela Frente", primary: ["upper-back"], secondary: ["biceps"] },
-  roscaDireta:    { nome: "Rosca Direta", primary: ["biceps"], secondary: ["forearm"] },
-  supino:         { nome: "Supino Reto Barra", primary: ["chest"], secondary: ["front-deltoids", "triceps"] },
-  desenvolvimento:{ nome: "Desenvolvimento com Halteres", primary: ["front-deltoids"], secondary: ["triceps"] },
-  triceps:        { nome: "Tríceps Corda", primary: ["triceps"], secondary: [] }
-};
 
 const backMuscles = ["trapezius", "upper-back", "lower-back", "triceps", "back-deltoids", "gluteal", "hamstring"];
 
@@ -22,13 +12,14 @@ const muscleLabels = {
   chest: "Peitoral", "front-deltoids": "Ombro", "back-deltoids": "Ombro (post.)",
   triceps: "Tríceps", biceps: "Bíceps", "upper-back": "Costas", "lower-back": "Lombar",
   trapezius: "Trapézio", quadriceps: "Quadríceps", gluteal: "Glúteo", hamstring: "Posterior",
-  calves: "Panturrilha", abs: "Abdômen", forearm: "Antebraço"
+  calves: "Panturrilha", abs: "Abdômen", forearm: "Antebraço", obliques: "Oblíquo",
+  adductors: "Adutor", abductors: "Abdutor"
 };
 
 const TEMPLATES = [
-  { id: "a", nome: "Peito e Tríceps", ficha: "Ficha A", tags: ["Peitoral", "Tríceps", "Ombros"], exercicios: ["supino", "desenvolvimento", "triceps"] },
-  { id: "b", nome: "Costas e Bíceps", ficha: "Ficha B", tags: ["Dorsais", "Bíceps", "Antebraço"], exercicios: ["remadaCurvada", "puxadaFrente", "roscaDireta"] },
-  { id: "c", nome: "Pernas e Glúteos", ficha: "Ficha C", tags: ["Quadríceps", "Posterior", "Glúteos"], exercicios: ["agachamento", "legPress", "cadeiraFlexora"] }
+  { id: "a", nome: "Peito e Tríceps", ficha: "Ficha A", tags: ["Peitoral", "Tríceps", "Ombros"], exercicios: ["supino_reto_barra", "supino_inclinado_halteres", "crucifixo_reto_halteres", "desenvolvimento_halteres", "triceps_corda", "mergulho_banco"] },
+  { id: "b", nome: "Costas e Bíceps", ficha: "Ficha B", tags: ["Dorsais", "Bíceps", "Antebraço"], exercicios: ["puxada_frente", "remada_curvada_barra", "remada_baixa_cabo", "rosca_direta_barra", "rosca_martelo", "rosca_scott"] },
+  { id: "c", nome: "Pernas e Glúteos", ficha: "Ficha C", tags: ["Quadríceps", "Posterior", "Glúteos"], exercicios: ["agachamento_livre", "leg_press", "cadeira_extensora", "cadeira_flexora", "elevacao_pelvica", "panturrilha_em_pe"] }
 ];
 
 const AVATARS = {
@@ -43,20 +34,20 @@ const PROFILES = {
     treinoHojeId: "a",
     diasTreinados: [2, 4, 6, 9, 11, 12, 13, 15, 16],
     historico: {
-      supino: [
+      supino_reto_barra: [
         { data: "01/08", carga: 52 }, { data: "04/08", carga: 55 },
         { data: "08/08", carga: 55 }, { data: "12/08", carga: 60 },
         { data: "15/08", carga: 60 }
       ],
-      agachamento: [
+      agachamento_livre: [
         { data: "02/08", carga: 70 }, { data: "05/08", carga: 75 },
         { data: "09/08", carga: 80 }, { data: "13/08", carga: 85 },
         { data: "16/08", carga: 90 }
       ]
     },
     recordes: [
-      { exercicio: "supino", data: "12 Ago", valor: "60kg (+2kg)" },
-      { exercicio: "agachamento", data: "16 Ago", valor: "90kg (+5kg)" }
+      { exercicio: "supino_reto_barra", data: "12 Ago", valor: "60kg (+2kg)" },
+      { exercicio: "agachamento_livre", data: "16 Ago", valor: "90kg (+5kg)" }
     ]
   },
   parceira: {
@@ -65,17 +56,17 @@ const PROFILES = {
     treinoHojeId: "b",
     diasTreinados: [3, 5, 8, 10, 13, 14, 16],
     historico: {
-      supino: [
+      supino_reto_barra: [
         { data: "03/08", carga: 15 }, { data: "07/08", carga: 17.5 },
         { data: "10/08", carga: 17.5 }, { data: "14/08", carga: 20 }
       ],
-      agachamento: [
+      agachamento_livre: [
         { data: "04/08", carga: 30 }, { data: "08/08", carga: 32.5 },
         { data: "11/08", carga: 35 }, { data: "15/08", carga: 35 }
       ]
     },
     recordes: [
-      { exercicio: "supino", data: "14 Ago", valor: "20kg (+2.5kg)" }
+      { exercicio: "supino_reto_barra", data: "14 Ago", valor: "20kg (+2.5kg)" }
     ]
   }
 };
@@ -187,31 +178,112 @@ function renderTemplateList() {
   list.innerHTML = "";
   TEMPLATES.forEach(t => {
     const card = document.createElement("article");
-    card.className = "bg-card border border-hairline rounded-[2rem] p-6 shadow-sm group hover:border-clay/30 transition-all cursor-pointer";
+    card.className = "bg-card border border-hairline rounded-2xl p-4 shadow-sm group hover:border-clay/30 transition-all";
     card.innerHTML = `
-      <div class="flex justify-between items-start mb-6">
-        <div class="space-y-1">
+      <div class="flex justify-between items-start mb-4">
+        <div class="space-y-1 cursor-pointer flex-1 template-open">
           <span class="text-[10px] font-bold text-clay uppercase tracking-[0.2em]">${t.ficha}</span>
-          <h3 class="font-serif text-2xl">${t.nome}</h3>
+          <h3 class="font-serif text-xl">${t.nome}</h3>
         </div>
-        <div class="w-12 h-12 bg-paper rounded-2xl flex items-center justify-center text-ink group-hover:bg-clay group-hover:text-white transition-all">
-          <i class="fa-solid fa-chevron-right"></i>
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <button class="template-edit w-9 h-9 bg-paper rounded-xl flex items-center justify-center text-muted hover:text-clay transition-all">
+            <i class="fa-solid fa-pen text-xs"></i>
+          </button>
+          <div class="template-open w-9 h-9 bg-paper rounded-xl flex items-center justify-center text-ink group-hover:bg-clay group-hover:text-white transition-all cursor-pointer">
+            <i class="fa-solid fa-chevron-right text-xs"></i>
+          </div>
         </div>
       </div>
-      <div class="flex flex-wrap gap-2 mb-6">
-        ${t.tags.map(tag => `<span class="text-[9px] font-bold text-muted uppercase tracking-widest border border-hairline px-2.5 py-1 rounded-full">${tag}</span>`).join("")}
+      <div class="flex flex-wrap gap-2 mb-4 template-open cursor-pointer">
+        ${t.tags.map(tag => `<span class="text-[9px] font-bold text-muted uppercase tracking-widest border border-hairline px-2 py-1 rounded-full">${tag}</span>`).join("")}
       </div>
-      <div class="flex items-center justify-between border-t border-hairline pt-4">
+      <div class="flex items-center justify-between border-t border-hairline pt-3 template-open cursor-pointer">
         <div class="flex items-center gap-2">
           <i class="fa-regular fa-calendar text-muted text-xs"></i>
           <span class="text-[11px] text-muted">${t.exercicios.length} exercícios</span>
         </div>
       </div>
     `;
-    card.addEventListener("click", () => startExecution(t.id));
+    card.querySelectorAll(".template-open").forEach(el => {
+      el.addEventListener("click", () => startExecution(t.id));
+    });
+    card.querySelector(".template-edit").addEventListener("click", (e) => {
+      e.stopPropagation();
+      openEditor(t.id);
+    });
     list.appendChild(card);
   });
 }
+
+/* =========================================================
+   EDITOR DE EXERCÍCIOS DO TREINO
+   ========================================================= */
+
+let editorTemplateId = null;
+
+function openEditor(templateId) {
+  editorTemplateId = templateId;
+  const t = TEMPLATES.find(x => x.id === templateId);
+  document.getElementById("editorFicha").textContent = t.ficha;
+  document.getElementById("editorTitle").textContent = t.nome;
+  renderEditorList();
+  showScreen("editor");
+}
+
+function renderEditorList() {
+  const t = TEMPLATES.find(x => x.id === editorTemplateId);
+  const list = document.getElementById("editorExerciseList");
+  list.innerHTML = "";
+
+  GROUPS.forEach(group => {
+    const idsDoGrupo = Object.entries(EXERCISES).filter(([, ex]) => ex.grupo === group.id);
+    if (idsDoGrupo.length === 0) return;
+
+    const header = document.createElement("p");
+    header.className = "text-[10px] font-bold text-muted uppercase tracking-[0.2em] px-2 pt-4 pb-1 first:pt-0";
+    header.textContent = group.nome;
+    list.appendChild(header);
+
+    idsDoGrupo.forEach(([id, ex]) => {
+      const included = t.exercicios.includes(id);
+      const row = document.createElement("button");
+      row.className = `w-full flex items-center justify-between gap-3 p-3.5 rounded-xl border transition-all text-left mb-2 ${
+        included ? "border-clay bg-claySoft/10" : "border-hairline bg-card"
+      }`;
+      const musclesText = [...ex.primary, ...ex.secondary].map(m => muscleLabels[m] || m).join(", ");
+      row.innerHTML = `
+        <div class="min-w-0">
+          <p class="text-sm font-bold truncate">${ex.nome}</p>
+          <p class="text-[11px] text-muted truncate">${musclesText} · ${ex.equipamento}</p>
+        </div>
+        <div class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
+          included ? "bg-clay text-white" : "border border-hairline text-transparent"
+        }">
+          <i class="fa-solid fa-check text-[10px]"></i>
+        </div>
+      `;
+      row.addEventListener("click", () => {
+        const idx = t.exercicios.indexOf(id);
+        if (idx >= 0) t.exercicios.splice(idx, 1);
+        else t.exercicios.push(id);
+        renderEditorList();
+      });
+      list.appendChild(row);
+    });
+  });
+}
+
+document.getElementById("editorBackBtn").addEventListener("click", () => showScreen("treinos"));
+document.getElementById("editorSaveBtn").addEventListener("click", () => {
+  // aqui entraria o salvamento real (Firestore) do template atualizado
+  renderTemplateList();
+  renderHoje();
+  showScreen("treinos");
+});
+
+document.getElementById("editTodayBtn").addEventListener("click", () => {
+  openEditor(currentProfile().treinoHojeId);
+});
 
 /* =========================================================
    TELA "EXECUÇÃO"
