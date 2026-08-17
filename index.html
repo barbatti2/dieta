@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Treino</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="app-header">
+  <div class="brand"><span class="dot">●</span> treino</div>
+  <div class="profile-switch" id="profileSwitch"></div>
+</header>
+
+<!-- ===================== INÍCIO ===================== -->
+<section class="view" id="view-inicio">
+  <div class="home-hero">
+    <div class="greet" id="homeGreet">Bom treino</div>
+    <div class="day" id="homeDay">—</div>
+    <div class="plan-name" id="homePlanName">Nenhum plano para hoje</div>
+  </div>
+
+  <div class="stat-grid" id="homeStats"></div>
+
+  <div class="section-title" style="font-size:15px;margin-bottom:10px;">Treino de hoje</div>
+  <div class="quick-list" id="homeToday"></div>
+</section>
+
+<!-- ===================== TREINOS ===================== -->
+<section class="view" id="view-treinos">
+  <div class="section-title">Treinos</div>
+  <p class="section-sub">Registre suas séries ou busque um exercício no catálogo.</p>
+
+  <div class="tabbar">
+    <button class="active" data-tab="hoje">Plano do dia</button>
+    <button data-tab="buscar">Buscar exercício</button>
+  </div>
+
+  <!-- TAB: plano do dia -->
+  <div id="tab-hoje">
+    <div class="week-select">
+      <select id="weekSelectTreino"></select>
+    </div>
+    <div class="day-chip-row" id="dayChipsTreino"></div>
+    <div id="dayPlanList"></div>
+  </div>
+
+  <!-- TAB: buscar -->
+  <div id="tab-buscar" style="display:none;">
+    <div class="search-wrap">
+      <span class="sicon">🔍</span>
+      <input type="text" id="searchInput" placeholder="Digite o nome do exercício...">
+    </div>
+    <div class="chip-row" id="categoryChips"></div>
+    <div class="card" id="searchResultsCard">
+      <div id="searchResults"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== ATIVIDADES ===================== -->
+<section class="view" id="view-atividades">
+  <div class="section-title">Atividades</div>
+  <p class="section-sub">Estatísticas dos últimos 7 dias e histórico completo.</p>
+
+  <div class="stat-grid" id="activityStats"></div>
+
+  <div class="card">
+    <div class="row-between" style="margin-bottom:10px;">
+      <strong style="font-size:14px;">Regiões mais treinadas</strong>
+      <span style="font-size:11px;color:var(--ink-soft);">7 dias</span>
+    </div>
+    <div id="regionBars"></div>
+  </div>
+
+  <div class="row-between" style="margin:22px 0 10px;">
+    <strong style="font-size:14px;">Histórico</strong>
+    <select id="historyRange" style="border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:12.5px;background:var(--surface);">
+      <option value="7">7 dias</option>
+      <option value="30">30 dias</option>
+      <option value="90">90 dias</option>
+    </select>
+  </div>
+  <div id="historyList"></div>
+</section>
+
+<!-- ===================== AJUSTES ===================== -->
+<section class="view" id="view-ajustes">
+  <div class="section-title">Ajustes</div>
+  <p class="section-sub">Monte o plano semanal, cadastre exercícios e edite os perfis.</p>
+
+  <div class="settings-group">
+    <h3>👤 Perfis</h3>
+    <div class="card">
+      <div class="field">
+        <label>Nome — Perfil 1</label>
+        <input type="text" id="nomePerfil1">
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label>Nome — Perfil 2</label>
+        <input type="text" id="nomePerfil2">
+      </div>
+      <button class="btn btn-primary btn-full" style="margin-top:14px;" id="salvarPerfisBtn">Salvar nomes</button>
+    </div>
+  </div>
+
+  <div class="settings-group">
+    <div class="row-between" style="margin-bottom:10px;">
+      <h3 style="margin:0;">🗓️ Plano semanal</h3>
+      <button class="btn btn-ghost btn-sm" id="novaSemanaBtn">+ Semana</button>
+    </div>
+    <div class="card">
+      <div class="week-select" style="margin-bottom:16px;">
+        <select id="weekSelectAjustes"></select>
+        <button class="btn btn-outline btn-sm" id="renomearSemanaBtn">Renomear</button>
+      </div>
+      <div class="day-chip-row" id="dayChipsAjustes"></div>
+      <div id="dayEditList"></div>
+      <button class="btn btn-primary btn-full" style="margin-top:14px;" id="addExercicioDiaBtn">+ Adicionar exercício ao dia</button>
+    </div>
+  </div>
+
+  <div class="settings-group">
+    <div class="row-between" style="margin-bottom:10px;">
+      <h3 style="margin:0;">📋 Catálogo de exercícios</h3>
+      <button class="btn btn-ghost btn-sm" id="novoExercicioBtn">+ Novo</button>
+    </div>
+    <div class="card">
+      <div class="chip-row" id="categoryChipsAjustes"></div>
+      <div id="catalogoList"></div>
+    </div>
+  </div>
+</section>
+
+<nav class="bottom-nav" id="bottomNav">
+  <button class="nav-btn active" data-view="inicio"><span class="icon">⌂</span>Início</button>
+  <button class="nav-btn" data-view="treinos"><span class="icon">🏋</span>Treinos</button>
+  <button class="nav-btn" data-view="atividades"><span class="icon">📊</span>Atividades</button>
+  <button class="nav-btn" data-view="ajustes"><span class="icon">⚙</span>Ajustes</button>
+</nav>
+
+<!-- ===================== SHEET (modal genérico) ===================== -->
+<div class="sheet-overlay" id="sheetOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <h2 id="sheetTitle">Título</h2>
+      <button class="sheet-close" id="sheetClose">✕</button>
+    </div>
+    <div id="sheetBody"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
