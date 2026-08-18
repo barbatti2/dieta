@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Projeto Dieta Premium</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Manrope', 'sans-serif'],
+            serif: ['Anton', 'sans-serif'],
+          },
+          colors: {
+            paper: '#F7F5F1',
+            card: '#FFFFFF',
+            ink: '#1F1D1B',
+            muted: '#8A8378',
+            clay: '#C9482F',
+            claySoft: '#E7B8A9',
+            emerald: '#3D5A4C',
+            hairline: '#D8D3C8',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+    ::-webkit-scrollbar { width: 0; height: 0; display: none; }
+    * { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+    body { user-select: none; }
+    input, textarea { user-select: text; }
+    .screen { display: none; }
+    .screen.active { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+    .profile-btn { opacity: .4; filter: grayscale(1); transition: all .15s; }
+    .profile-btn.active { opacity: 1; filter: none; box-shadow: 0 0 0 2px #C9482F, 0 0 0 4px #fff; }
+    .toast { position: absolute; left: 50%; bottom: 96px; transform: translateX(-50%) translateY(8px); opacity: 0; pointer-events: none; transition: all .25s ease; z-index: 60; }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .weekday-btn { opacity: .5; }
+    .weekday-btn.active { opacity: 1; background: #C9482F; color: #fff; border-color: #C9482F; }
+    .font-serif { text-transform: uppercase; letter-spacing: -0.01em; }
+    h1.font-serif, .ex-name-display { line-height: 0.92; }
+  </style>
+</head>
+<body class="bg-paper sm:bg-[#EDE8DF] text-ink font-sans antialiased min-h-screen flex items-center justify-center sm:py-6">
+
+  <div class="w-full max-w-[375px] mx-auto h-[100dvh] sm:h-[780px] bg-paper relative flex flex-col sm:rounded-[2.5rem] sm:shadow-2xl sm:shadow-black/10 overflow-hidden">
+
+    <!-- toast de confirmação -->
+    <div id="toast" class="toast bg-ink text-white text-xs font-bold px-4 py-2.5 rounded-full shadow-lg"></div>
+
+    <!-- ===================== HOJE ===================== -->
+    <section class="screen active" data-screen="hoje">
+      <header class="flex-shrink-0 px-6 pt-12 pb-4 flex justify-between items-center bg-paper">
+        <div>
+          <p class="text-[10px] uppercase tracking-[0.2em] text-muted mb-0.5" id="todayDate">Segunda, 14 Out</p>
+          <h1 class="font-serif text-2xl font-medium">Hoje</h1>
+        </div>
+        <div class="profile-toggle flex items-center bg-white border border-hairline p-1 rounded-full shadow-sm gap-1">
+          <button class="profile-btn w-8 h-8 rounded-full overflow-hidden" data-profile="voce">
+            <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg" alt="Você" class="w-full h-full object-cover">
+          </button>
+          <button class="profile-btn w-8 h-8 rounded-full overflow-hidden" data-profile="parceira">
+            <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-5.jpg" alt="Parceira" class="w-full h-full object-cover">
+          </button>
+        </div>
+      </header>
+
+      <main class="flex-1 min-h-0 overflow-y-auto px-6 pb-8 space-y-4">
+        <section class="space-y-3">
+          <h2 class="text-[10px] font-bold text-muted uppercase tracking-[0.2em] px-1">Últimos 7 dias</h2>
+          <div class="bg-card border border-hairline rounded-2xl p-4 shadow-sm flex justify-between items-center" id="weekStrip"></div>
+        </section>
+
+        <section class="bg-clay text-white rounded-2xl px-5 py-4 shadow-sm flex items-center justify-center gap-3">
+          <i class="fa-solid fa-fire text-base opacity-80"></i>
+          <div class="text-center">
+            <p class="text-[9px] uppercase tracking-[0.15em] opacity-70 mb-0.5">Sequência de treinos</p>
+            <div class="flex items-baseline gap-1.5 justify-center">
+              <span class="font-serif text-2xl font-medium leading-none" id="streakCount">12</span>
+              <span class="text-xs font-medium opacity-80">dias seguidos treinando</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="space-y-3" id="todayWorkoutSection">
+          <h2 class="text-[10px] font-bold text-muted uppercase tracking-[0.2em] px-1">Treino de Hoje</h2>
+          <div id="todayWorkoutCard"></div>
+        </section>
+      </main>
+    </section>
+
+    <!-- ===================== TREINOS (lista) ===================== -->
+    <section class="screen" data-screen="treinos">
+      <header class="flex-shrink-0 px-6 pt-12 pb-4 flex justify-between items-center bg-paper">
+        <h1 class="font-serif text-2xl font-medium">Treinos</h1>
+        <div class="profile-toggle flex items-center bg-white border border-hairline p-1 rounded-full shadow-sm gap-1">
+          <button class="profile-btn w-8 h-8 rounded-full overflow-hidden" data-profile="voce">
+            <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg" alt="Você" class="w-full h-full object-cover">
+          </button>
+          <button class="profile-btn w-8 h-8 rounded-full overflow-hidden" data-profile="parceira">
+            <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-5.jpg" alt="Parceira" class="w-full h-full object-cover">
+          </button>
+        </div>
+      </header>
+
+      <main class="flex-1 min-h-0 overflow-y-auto px-6 pb-32 space-y-6">
+        <section class="space-y-4" id="templateList"></section>
+
+        <button id="createTemplateBtn" class="w-full border-2 border-dashed border-hairline rounded-2xl py-6 flex flex-col items-center gap-2 text-muted hover:text-clay hover:border-clay/40 transition-all">
+          <i class="fa-solid fa-circle-plus text-xl"></i>
+          <span class="text-xs font-bold uppercase tracking-widest">Criar Nova Ficha</span>
+        </button>
+      </main>
+    </section>
+
+    <!-- ===================== EDITAR EXERCÍCIOS DO TREINO ===================== -->
+    <section class="screen" data-screen="editor">
+      <header class="flex-shrink-0 px-6 pt-12 pb-4 flex items-center gap-3 bg-paper">
+        <button id="editorBackBtn" class="w-9 h-9 rounded-full border border-hairline flex items-center justify-center text-muted flex-shrink-0">
+          <i class="fa-solid fa-arrow-left"></i>
+        </button>
+        <div class="min-w-0 flex-1">
+          <p class="text-[10px] uppercase tracking-[0.2em] text-muted mb-0.5" id="editorFicha">Ficha A</p>
+          <input id="editorTitleInput" class="font-serif text-xl truncate w-full bg-transparent outline-none border-b border-transparent focus:border-hairline" value="Peito e Tríceps">
+        </div>
+      </header>
+
+      <main class="flex-1 min-h-0 overflow-y-auto px-6 pb-6 space-y-2">
+        <p class="text-[10px] font-bold text-muted uppercase tracking-[0.2em] px-2 pt-2 pb-1">Repetir em quais dias?</p>
+        <div id="editorWeekdays" class="flex gap-1.5 px-1 pb-3"></div>
+
+        <p class="text-[10px] font-bold text-muted uppercase tracking-[0.2em] px-2 pb-1">Toque para incluir ou remover exercícios</p>
+        <div id="editorExerciseList" class="space-y-2"></div>
+      </main>
+
+      <footer class="flex-shrink-0 px-6 py-4 border-t border-hairline bg-paper flex gap-3">
+        <button id="editorDeleteBtn" class="w-12 flex-shrink-0 border border-hairline rounded-2xl flex items-center justify-center text-muted hover:text-clay hover:border-clay transition-all">
+          <i class="fa-solid fa-trash-can text-sm"></i>
+        </button>
+        <button id="editorSaveBtn" class="flex-1 bg-ink text-white font-medium py-3 rounded-2xl hover:bg-black transition-all active:scale-[0.98]">
+          Salvar treino
+        </button>
+      </footer>
+    </section>
+
+    <!-- ===================== EXECUÇÃO ===================== -->
+    <section class="screen" data-screen="execucao">
+      <header class="flex-shrink-0 px-6 pt-12 pb-4 bg-paper">
+        <div class="flex items-center justify-between mb-4">
+          <button id="execCloseBtn" class="w-9 h-9 rounded-full bg-clay text-white flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-chevron-left text-sm"></i></button>
+          <div class="flex-1 px-6">
+            <div class="w-full h-1.5 bg-hairline rounded-full overflow-hidden">
+              <div class="h-full bg-clay transition-all duration-500" id="execProgressBar" style="width: 0%"></div>
+            </div>
+          </div>
+          <span class="text-[10px] font-bold text-muted uppercase tracking-widest flex-shrink-0" id="execIndex">1 / 6</span>
+        </div>
+        <h1 class="font-serif text-clay text-[26px] leading-[0.95]" id="execName">Agachamento Livre</h1>
+        <span class="inline-block mt-2 bg-clay text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full" id="execGroupTag">Perna</span>
+      </header>
+
+      <main class="flex-1 min-h-0 overflow-y-auto px-6 pb-6 space-y-3">
+        <div class="relative w-full aspect-[4/3] rounded-2xl overflow-hidden bg-paper flex items-center justify-center border border-hairline">
+          <img id="execImage" src="" alt="" class="w-full h-full object-cover">
+        </div>
+
+        <section class="flex items-center gap-3">
+          <div class="flex-1 bg-ink rounded-xl px-4 py-3 min-w-0">
+            <p class="text-[10px] font-bold uppercase tracking-widest leading-tight"><span class="text-clay">Foco</span> <span class="text-white">Muscular</span></p>
+            <p class="text-sm font-bold text-white truncate" id="execFocus">Quadríceps, Glúteo</p>
+          </div>
+          <div class="w-20 h-20 rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0 bg-card border border-hairline" id="execModel"></div>
+        </section>
+
+        <section class="grid grid-cols-2 gap-3">
+          <div class="bg-card border border-hairline rounded-xl p-3 shadow-sm">
+            <p class="text-[9px] font-bold text-muted uppercase tracking-widest mb-2 text-center">Carga (kg)</p>
+            <div class="flex items-center justify-between">
+              <button class="stepper w-9 h-9 border border-hairline rounded-full flex items-center justify-center text-clay hover:bg-clay hover:text-white transition-all active:scale-90" data-target="weight" data-dir="-1"><i class="fa-solid fa-minus text-xs"></i></button>
+              <span class="font-serif text-2xl" id="weightValue">40</span>
+              <button class="stepper w-9 h-9 border border-hairline rounded-full flex items-center justify-center text-clay hover:bg-clay hover:text-white transition-all active:scale-90" data-target="weight" data-dir="1"><i class="fa-solid fa-plus text-xs"></i></button>
+            </div>
+          </div>
+          <div class="bg-card border border-hairline rounded-xl p-3 shadow-sm">
+            <p class="text-[9px] font-bold text-muted uppercase tracking-widest mb-2 text-center">Reps</p>
+            <div class="flex items-center justify-between">
+              <button class="stepper w-9 h-9 border border-hairline rounded-full flex items-center justify-center text-clay hover:bg-clay hover:text-white transition-all active:scale-90" data-target="reps" data-dir="-1"><i class="fa-solid fa-minus text-xs"></i></button>
+              <span class="font-serif text-2xl" id="repsValue">10</span>
+              <button class="stepper w-9 h-9 border border-hairline rounded-full flex items-center justify-center text-clay hover:bg-clay hover:text-white transition-all active:scale-90" data-target="reps" data-dir="1"><i class="fa-solid fa-plus text-xs"></i></button>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer class="flex-shrink-0 bg-white/80 backdrop-blur-xl border-t border-hairline px-6 pt-4 pb-8 flex flex-col gap-2 z-50">
+        <button id="mainExecBtn" class="w-full bg-clay text-white font-bold uppercase tracking-wide py-4 rounded-2xl hover:bg-[#b33e27] transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-sm shadow-lg shadow-clay/20">
+          <i class="fa-solid fa-check"></i>
+          <span id="mainExecBtnLabel">Concluir exercício</span>
+        </button>
+        <button id="prevExBtn" class="text-xs font-bold text-muted uppercase tracking-widest hover:text-ink transition-colors flex items-center justify-center gap-2 py-1">
+          <i class="fa-solid fa-chevron-left text-[9px]"></i> Exercício anterior
+        </button>
+      </footer>
+    </section>
+
+    <!-- ===================== CARDIO ===================== -->
+    <section class="screen" data-screen="cardio">
+      <header class="flex-shrink-0 px-6 pt-12 pb-4 flex justify-between items-center bg-paper">
+        <h1 class="font-serif text-2xl font-medium">Cardio</h1>
+      </header>
+
+      <main class="flex-1 min-h-0 overflow-y-auto px-6 pb-32 space-y-10">
+        <section class="space-y-4">
+          <h2 class="text-[10px] font-bold text-muted uppercase tracking-[0.2em] px-2">Tipo de Atividade</h2>
+          <div class="grid grid-cols-2 gap-3" id="cardioTypeRow">
+            <button class="cardio-type-btn bg-card border-2 border-clay rounded-2xl p-4 flex flex-col items-center gap-3 shadow-sm transition-all" data-type="esteira">
+              <i class="fa-solid fa-person-walking text-2xl text-clay"></i>
+              <span class="text-xs font-bold text-ink uppercase tracking-widest">Esteira</span>
+            </button>
+            <button class="cardio-type-btn bg-card border border-hairline rounded-2xl p-4 flex flex-col items-center gap-3 shadow-sm hover:border-clay/30 transition-all" data-type="bike">
+              <i class="fa-solid fa-person-biking text-2xl text-muted"></i>
+              <span class="text-xs font-bold text-muted uppercase tracking-widest">Bike</span>
+            </button>
+            <button class="cardio-type-btn bg-card border border-hairline rounded-2xl p-4 flex flex-col items-center gap-3 shadow-sm hover:border-clay/30 transition-all" data-type="eliptico">
+              <i class="fa-solid fa-person-running text-2xl text-muted"></i>
+              <span class="text-xs font-bold text-muted uppercase tracking-widest">Elíptico</span>
+            </button>
+            <button class="cardio-type-btn bg-card border border-hairline rounded-2xl p-4 flex flex-col items-center gap-3 shadow-sm hover:border-clay/30 transition-all" data-type="outro">
+              <i class="fa-solid fa-plus text-2xl text-muted"></i>
+              <span class="text-xs font-bold text-muted uppercase tracking-widest">Outro</span>
+            </button>
+          </div>
+        </section>
+
+        <section class="space-y-4">
+          <h2 class="text-[10px] font-bold text-muted uppercase tracking-[0.2em] px-2">Tempo (minutos)</h2>
+          <div class="bg-card border border-hairline rounded-[1.75rem] p-4 shadow-sm flex flex-col items-center gap-4">
+            <div class="flex items-center gap-4">
+              <button class="stepper w-10 h-10 border border-hairline rounded-full flex items-center justify-center text-muted hover:border-clay hover:text-clay transition-all active:scale-90" data-target="cardioMin" data-dir="-1"><i class="fa-solid fa-minus text-lg"></i></button>
+              <div class="flex flex-col items-center">
+                <span class="font-serif text-4xl text-ink leading-none" id="cardioMinValue">45</span>
+                <span class="text-[10px] font-bold text-muted uppercase tracking-widest mt-2">minutos</span>
+              </div>
+              <button class="stepper w-10 h-10 border border-hairline rounded-full flex items-center justify-center text-muted hover:border-clay hover:text-clay transition-all active:scale-90" data-target="cardioMin" data-dir="1"><i class="fa-solid fa-plus text-lg"></i></button>
+            </div>
+            <div class="flex gap-2 w-full mt-4">
+              <button class="cardio-preset flex-1 bg-paper border border-hairline py-2 rounded-full text-[10px] font-bold text-muted uppercase tracking-tighter hover:bg-claySoft/20 transition-all" data-min="15">15 min</button>
+              <button class="cardio-preset flex-1 bg-paper border border-hairline py-2 rounded-full text-[10px] font-bold text-muted uppercase tracking-tighter hover:bg-claySoft/20 transition-all" data-min="30">30 min</button>
+              <button class="cardio-preset flex-1 bg-paper border border-hairline py-2 rounded-full text-[10px] font-bold text-muted uppercase tracking-tighter hover:bg-claySoft/20 transition-all" data-min="60">60 min</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="space-y-4">
+          <h2 class="text-[10px] font-bold text-muted uppercase tracking-[0.2em] px-2">Intensidade</h2>
+          <div class="bg-card border border-hairline rounded-full p-2 flex" id="intensityRow">
+            <button class="intensity-btn flex-1 bg-paper text-[10px] font-bold text-ink uppercase py-3 rounded-full tracking-widest" data-intensity="leve">Leve</button>
+            <button class="intensity-btn flex-1 text-[10px] font-bold text-muted uppercase py-3 rounded-full tracking-widest hover:text-ink transition-all" data-intensity="moderado">Moderado</button>
+            <button class="intensity-btn flex-1 text-[10px] font-bold text-muted uppercase py-3 rounded-full tracking-widest hover:text-ink transition-all" data-intensity="forte">Forte</button>
+          </div>
+        </section>
+
+        <button id="confirmCardioBtn" class="w-full bg-ink text-white font-medium py-3.5 rounded-2xl hover:bg-black transition-all active:scale-[0.98] shadow-xl shadow-ink/10">
+          Salvar Cardio
+        </button>
+      </main>
+    </section>
+
+    <!-- ===================== HISTÓRICO ===================== -->
+    <section class="screen" data-screen="historico">
+      <header class="flex-shrink-0 px-6 pt-12 pb-4 flex justify-between items-center bg-paper">
+        <h1 class="font-serif text-2xl font-medium">Histórico</h1>
+        <div class="profile-toggle flex items-center bg-white border border-hairline p-1 rounded-full shadow-sm gap-1">
+          <button class="profile-btn w-8 h-8 rounded-full overflow-hidden" data-profile="voce">
+            <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg" alt="Você" class="w-full h-full object-cover">
+          </button>
+          <button class="profile-btn w-8 h-8 rounded-full overflow-hidden" data-profile="parceira">
+            <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-5.jpg" alt="Parceira" class="w-full h-full object-cover">
+          </button>
+        </div>
+      </header>
+
+      <main class="flex-1 min-h-0 overflow-y-auto px-6 pb-8">
+        <div id="historicoList" class="space-y-2.5"></div>
+      </main>
+    </section>
+
+    <!-- ===================== CALENDÁRIO ===================== -->
+    <section class="screen" data-screen="calendario">
+      <header class="flex-shrink-0 px-6 pt-12 pb-4 flex justify-between items-center bg-paper">
+        <h1 class="font-serif text-2xl font-medium">Calendário</h1>
+        <div class="profile-toggle flex items-center bg-white border border-hairline p-1 rounded-full shadow-sm gap-1">
+          <button class="profile-btn w-8 h-8 rounded-full overflow-hidden" data-profile="voce">
+            <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg" alt="Você" class="w-full h-full object-cover">
+          </button>
+          <button class="profile-btn w-8 h-8 rounded-full overflow-hidden" data-profile="parceira">
+            <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-5.jpg" alt="Parceira" class="w-full h-full object-cover">
+          </button>
+        </div>
+      </header>
+
+      <main class="flex-1 min-h-0 overflow-y-auto px-6 pb-32 space-y-8">
+        <div class="flex items-center justify-between px-2">
+          <button id="calPrevBtn" class="text-muted hover:text-ink"><i class="fa-solid fa-chevron-left"></i></button>
+          <h2 class="font-serif text-lg" id="calMonthLabel">Agosto 2026</h2>
+          <button id="calNextBtn" class="text-muted hover:text-ink"><i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+
+        <section class="bg-card border border-hairline rounded-[1.75rem] p-4 shadow-sm">
+          <div class="grid grid-cols-7 mb-4">
+            <span class="text-center text-[9px] font-bold text-muted uppercase">Dom</span>
+            <span class="text-center text-[9px] font-bold text-muted uppercase">Seg</span>
+            <span class="text-center text-[9px] font-bold text-muted uppercase">Ter</span>
+            <span class="text-center text-[9px] font-bold text-muted uppercase">Qua</span>
+            <span class="text-center text-[9px] font-bold text-muted uppercase">Qui</span>
+            <span class="text-center text-[9px] font-bold text-muted uppercase">Sex</span>
+            <span class="text-center text-[9px] font-bold text-muted uppercase">Sab</span>
+          </div>
+          <div class="grid grid-cols-7 gap-y-2" id="calGrid"></div>
+        </section>
+
+        <section class="space-y-4" id="dayDetailWrap" style="display:none;">
+          <h3 class="text-[10px] font-bold text-muted uppercase tracking-[0.2em] px-2" id="dayDetailTitle">Detalhes</h3>
+          <div class="bg-card border border-hairline rounded-2xl p-4 shadow-sm">
+            <div class="flex items-start gap-4">
+              <div class="w-10 h-10 bg-claySoft/10 rounded-2xl flex items-center justify-center text-clay">
+                <i class="fa-solid fa-dumbbell"></i>
+              </div>
+              <div class="flex-1">
+                <div class="flex items-center justify-between mb-1">
+                  <h4 class="text-sm font-bold" id="dayDetailName">Treino</h4>
+                  <span class="text-[9px] font-bold text-emerald uppercase tracking-tighter">Concluído</span>
+                </div>
+                <p class="text-xs text-muted" id="dayDetailMeta">—</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </section>
+
+    <!-- ===================== BOTTOM NAV (único, compartilhado) ===================== -->
+    <nav id="bottomNav" class="flex-shrink-0 bg-white/80 backdrop-blur-xl border-t border-hairline px-6 pt-3 pb-8 flex justify-around items-center z-50">
+      <button class="nav-item flex flex-col items-center gap-1.5 text-clay" data-nav="hoje">
+        <div class="w-5 h-5 flex items-center justify-center"><i class="fa-solid fa-house"></i></div>
+        <span class="text-[10px] font-bold uppercase tracking-widest">Hoje</span>
+      </button>
+      <button class="nav-item flex flex-col items-center gap-1.5 text-muted transition-colors hover:text-ink" data-nav="treinos">
+        <div class="w-5 h-5 flex items-center justify-center"><i class="fa-solid fa-dumbbell"></i></div>
+        <span class="text-[10px] font-bold uppercase tracking-widest">Treinos</span>
+      </button>
+      <button class="nav-item flex flex-col items-center gap-1.5 text-muted transition-colors hover:text-ink" data-nav="cardio">
+        <div class="w-5 h-5 flex items-center justify-center"><i class="fa-solid fa-person-running"></i></div>
+        <span class="text-[10px] font-bold uppercase tracking-widest">Cardio</span>
+      </button>
+      <button class="nav-item flex flex-col items-center gap-1.5 text-muted transition-colors hover:text-ink" data-nav="historico">
+        <div class="w-5 h-5 flex items-center justify-center"><i class="fa-solid fa-clock-rotate-left"></i></div>
+        <span class="text-[10px] font-bold uppercase tracking-widest">Histórico</span>
+      </button>
+      <button class="nav-item flex flex-col items-center gap-1.5 text-muted transition-colors hover:text-ink" data-nav="calendario">
+        <div class="w-5 h-5 flex items-center justify-center"><i class="fa-regular fa-calendar-check"></i></div>
+        <span class="text-[10px] font-bold uppercase tracking-widest">Calendário</span>
+      </button>
+    </nav>
+
+  </div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
