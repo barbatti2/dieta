@@ -16,10 +16,13 @@ const muscleLabels = {
   adductors: "Adutor", abductors: "Abdutor"
 };
 
+const WEEKDAY_LABELS = ["D", "S", "T", "Q", "Q", "S", "S"];
+const WEEKDAY_FULL = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
+
 const TEMPLATES = [
-  { id: "a", nome: "Peito e Tríceps", ficha: "Ficha A", tags: ["Peitoral", "Tríceps", "Ombros"], exercicios: ["supino_reto_barra", "supino_inclinado_halteres", "crucifixo_reto_halteres", "desenvolvimento_halteres", "triceps_corda", "mergulho_banco"] },
-  { id: "b", nome: "Costas e Bíceps", ficha: "Ficha B", tags: ["Dorsais", "Bíceps", "Antebraço"], exercicios: ["puxada_frente", "remada_curvada_barra", "remada_baixa_cabo", "rosca_direta_barra", "rosca_martelo", "rosca_scott"] },
-  { id: "c", nome: "Pernas e Glúteos", ficha: "Ficha C", tags: ["Quadríceps", "Posterior", "Glúteos"], exercicios: ["agachamento_livre", "leg_press", "cadeira_extensora", "cadeira_flexora", "elevacao_pelvica", "panturrilha_em_pe"] }
+  { id: "a", nome: "Peito e Tríceps", ficha: "Ficha A", tags: ["Peitoral", "Tríceps", "Ombros"], dias: [1, 4], exercicios: ["supino_reto_barra", "supino_inclinado_halteres", "crucifixo_reto_halteres", "desenvolvimento_halteres", "triceps_corda", "mergulho_banco"] },
+  { id: "b", nome: "Costas e Bíceps", ficha: "Ficha B", tags: ["Dorsais", "Bíceps", "Antebraço"], dias: [2, 5], exercicios: ["puxada_frente", "remada_curvada_barra", "remada_baixa_cabo", "rosca_direta_barra", "rosca_martelo", "rosca_scott"] },
+  { id: "c", nome: "Pernas e Glúteos", ficha: "Ficha C", tags: ["Quadríceps", "Posterior", "Glúteos"], dias: [3, 6], exercicios: ["agachamento_livre", "leg_press", "cadeira_extensora", "cadeira_flexora", "elevacao_pelvica", "panturrilha_em_pe"] }
 ];
 
 const AVATARS = {
@@ -119,20 +122,59 @@ function renderHoje() {
 
   const strip = document.getElementById("weekStrip");
   strip.innerHTML = "";
-  const dayLabels = ["D", "S", "T", "Q", "Q", "S", "S"];
   for (let i = 6; i >= 0; i--) {
     const dayNum = HOJE_DIA - i;
     const trained = p.diasTreinados.includes(dayNum);
     const el = document.createElement("div");
     el.className = "flex flex-col items-center gap-2";
     el.innerHTML = `
-      <span class="text-[9px] font-bold text-muted uppercase">${dayLabels[dayNum % 7]}</span>
+      <span class="text-[9px] font-bold text-muted uppercase">${WEEKDAY_LABELS[dayNum % 7]}</span>
       <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs shadow-sm ${
         trained ? "bg-clay text-white" : "border border-hairline bg-paper text-hairline"
       }">${trained ? '<i class="fa-solid fa-check"></i>' : ""}</div>
     `;
     strip.appendChild(el);
   }
+
+  renderTodayWorkout();
+}
+
+function renderTodayWorkout() {
+  const hoje = new Date().getDay(); // 0 = domingo ... 6 = sábado (dia real do dispositivo)
+  const container = document.getElementById("todayWorkoutCard");
+  const treinosHoje = TEMPLATES.filter(t => (t.dias || []).includes(hoje));
+
+  if (treinosHoje.length === 0) {
+    container.innerHTML = `
+      <div class="bg-card border border-dashed border-hairline rounded-2xl p-4 text-center">
+        <p class="text-sm text-muted">Nenhum treino agendado para hoje (${WEEKDAY_FULL[hoje]}).</p>
+        <button id="goScheduleBtn" class="mt-3 text-xs font-bold text-clay uppercase tracking-widest">Agendar na aba Treinos →</button>
+      </div>
+    `;
+    document.getElementById("goScheduleBtn").addEventListener("click", () => showScreen("treinos"));
+    return;
+  }
+
+  container.innerHTML = treinosHoje.map(t => `
+    <div class="bg-card border border-hairline rounded-2xl p-4 shadow-sm mb-3 last:mb-0">
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <span class="text-[10px] font-bold text-clay uppercase tracking-[0.2em]">${t.ficha}</span>
+          <h3 class="font-serif text-lg font-medium">${t.nome}</h3>
+        </div>
+        <div class="w-10 h-10 bg-paper rounded-xl flex items-center justify-center text-clay flex-shrink-0">
+          <i class="fa-solid fa-dumbbell"></i>
+        </div>
+      </div>
+      <button class="start-today-btn w-full bg-ink text-white font-medium py-2.5 rounded-xl text-sm active:scale-[0.98] transition-all" data-template-id="${t.id}">
+        Iniciar Treino
+      </button>
+    </div>
+  `).join("");
+
+  container.querySelectorAll(".start-today-btn").forEach(btn => {
+    btn.addEventListener("click", () => startExecution(btn.dataset.templateId));
+  });
 }
 
 function marcarDiaTreinado() {
@@ -152,29 +194,24 @@ function renderTemplateList() {
   list.innerHTML = "";
   TEMPLATES.forEach(t => {
     const card = document.createElement("article");
-    card.className = "bg-card border border-hairline rounded-2xl p-4 shadow-sm group hover:border-clay/30 transition-all";
+    card.className = "bg-card border border-hairline rounded-xl p-3 shadow-sm group hover:border-clay/30 transition-all";
+    const diasTexto = (t.dias || []).length
+      ? t.dias.slice().sort().map(d => WEEKDAY_LABELS[d]).join(" · ")
+      : "Sem dia definido";
     card.innerHTML = `
-      <div class="flex justify-between items-start mb-4">
-        <div class="space-y-1 cursor-pointer flex-1 template-open">
-          <span class="text-[10px] font-bold text-clay uppercase tracking-[0.2em]">${t.ficha}</span>
-          <h3 class="font-serif text-xl font-medium">${t.nome}</h3>
+      <div class="flex items-center justify-between gap-3">
+        <div class="min-w-0 flex-1 cursor-pointer template-open">
+          <span class="text-[9px] font-bold text-clay uppercase tracking-[0.15em]">${t.ficha}</span>
+          <h3 class="font-serif text-base font-medium truncate">${t.nome}</h3>
+          <p class="text-[11px] text-muted mt-0.5">${t.exercicios.length} exercícios · ${diasTexto}</p>
         </div>
-        <div class="flex items-center gap-2 flex-shrink-0">
-          <button class="template-edit w-9 h-9 bg-paper rounded-xl flex items-center justify-center text-muted hover:text-clay transition-all">
-            <i class="fa-solid fa-pen text-xs"></i>
+        <div class="flex items-center gap-1.5 flex-shrink-0">
+          <button class="template-edit w-8 h-8 bg-paper rounded-lg flex items-center justify-center text-muted hover:text-clay transition-all">
+            <i class="fa-solid fa-pen text-[11px]"></i>
           </button>
-          <div class="template-open w-9 h-9 bg-paper rounded-xl flex items-center justify-center text-ink group-hover:bg-clay group-hover:text-white transition-all cursor-pointer">
-            <i class="fa-solid fa-chevron-right text-xs"></i>
+          <div class="template-open w-8 h-8 bg-paper rounded-lg flex items-center justify-center text-ink group-hover:bg-clay group-hover:text-white transition-all cursor-pointer">
+            <i class="fa-solid fa-chevron-right text-[11px]"></i>
           </div>
-        </div>
-      </div>
-      <div class="flex flex-wrap gap-2 mb-4 template-open cursor-pointer">
-        ${t.tags.map(tag => `<span class="text-[9px] font-bold text-muted uppercase tracking-widest border border-hairline px-2 py-1 rounded-full">${tag}</span>`).join("")}
-      </div>
-      <div class="flex items-center justify-between border-t border-hairline pt-3 template-open cursor-pointer">
-        <div class="flex items-center gap-2">
-          <i class="fa-regular fa-calendar text-muted text-xs"></i>
-          <span class="text-[11px] text-muted">${t.exercicios.length} exercícios</span>
         </div>
       </div>
     `;
@@ -202,8 +239,30 @@ function openEditor(templateId) {
   const input = document.getElementById("editorTitleInput");
   input.value = t.nome;
   input.oninput = () => { t.nome = input.value; };
+  renderEditorWeekdays();
   renderEditorList();
   showScreen("editor");
+}
+
+function renderEditorWeekdays() {
+  const t = TEMPLATES.find(x => x.id === editorTemplateId);
+  const wrap = document.getElementById("editorWeekdays");
+  wrap.innerHTML = "";
+  WEEKDAY_LABELS.forEach((label, idx) => {
+    const active = (t.dias || []).includes(idx);
+    const btn = document.createElement("button");
+    btn.className = `weekday-btn flex-1 py-2.5 rounded-lg border border-hairline text-xs font-bold transition-all ${active ? "active" : "bg-card text-ink"}`;
+    btn.textContent = label;
+    btn.title = WEEKDAY_FULL[idx];
+    btn.addEventListener("click", () => {
+      if (!t.dias) t.dias = [];
+      const i = t.dias.indexOf(idx);
+      if (i >= 0) t.dias.splice(i, 1);
+      else t.dias.push(idx);
+      renderEditorWeekdays();
+    });
+    wrap.appendChild(btn);
+  });
 }
 
 function createNewTemplate() {
@@ -213,6 +272,7 @@ function createNewTemplate() {
     nome: "Novo Treino",
     ficha: "Ficha " + nextLetter,
     tags: [],
+    dias: [],
     exercicios: []
   };
   TEMPLATES.push(novo);
@@ -270,6 +330,7 @@ document.getElementById("editorBackBtn").addEventListener("click", () => showScr
 document.getElementById("editorSaveBtn").addEventListener("click", () => {
   // aqui entraria o salvamento real (Firestore) do template atualizado
   renderTemplateList();
+  renderHoje();
   showToast("Treino salvo!");
   showScreen("treinos");
 });
@@ -278,6 +339,7 @@ document.getElementById("editorDeleteBtn").addEventListener("click", () => {
   const idx = TEMPLATES.findIndex(t => t.id === editorTemplateId);
   if (idx >= 0) TEMPLATES.splice(idx, 1);
   renderTemplateList();
+  renderHoje();
   showScreen("treinos");
 });
 
@@ -326,8 +388,8 @@ function renderExecucao() {
   document.getElementById("weightValue").textContent = ec.weight;
   document.getElementById("repsValue").textContent = ec.reps;
 
-  document.getElementById("nextExBtn").style.display = isLast ? "none" : "flex";
-  document.getElementById("finishWorkoutBtn").style.display = isLast ? "flex" : "none";
+  document.getElementById("mainExecBtnLabel").textContent = isLast ? "Concluir Treino" : `Concluir ${ex.nome}`;
+  document.getElementById("prevExBtn").style.visibility = ec.exercicioIndex === 0 ? "hidden" : "visible";
 
   renderMuscleModel(ex);
 }
@@ -349,7 +411,19 @@ function renderMuscleModel(ex) {
     type: hasBack ? "posterior" : "anterior",
     bodyColor: "#D8D3C8",
     highlightedColors: ["#E7B8A9", "#C9482F"],
-    style: { width: "44px" }
+    style: { width: "24px" }
+  });
+
+  // a lib gera um SVG com proporção retangular (corpo inteiro); sem isso,
+  // ele "vaza" pra fora do quadradinho de 40x40 e invade a foto acima.
+  // Escalamos o SVG pra caber inteiro dentro do container, sem cortar nem vazar.
+  requestAnimationFrame(() => {
+    const svg = container.querySelector("svg");
+    if (!svg) return;
+    svg.style.width = "100%";
+    svg.style.height = "100%";
+    svg.style.display = "block";
+    svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
   });
 }
 
@@ -379,16 +453,17 @@ document.getElementById("prevExBtn").addEventListener("click", () => {
   }
 });
 
-document.getElementById("nextExBtn").addEventListener("click", () => {
+document.getElementById("mainExecBtn").addEventListener("click", () => {
   const ec = state.execucao;
   const t = currentTemplate();
-  if (ec.exercicioIndex < t.exercicios.length - 1) {
+  const isLast = ec.exercicioIndex === t.exercicios.length - 1;
+
+  if (!isLast) {
     ec.exercicioIndex++;
     renderExecucao();
+    return;
   }
-});
 
-document.getElementById("finishWorkoutBtn").addEventListener("click", () => {
   // aqui entraria o salvamento real (Firestore) do treino concluído
   marcarDiaTreinado();
   renderHoje();
