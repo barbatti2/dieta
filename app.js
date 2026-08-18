@@ -86,6 +86,8 @@ function showToast(msg) {
    NAVEGAÇÃO
    ========================================================= */
 
+const TAB_SCREENS = ["hoje", "treinos", "cardio", "historico", "calendario"];
+
 function showScreen(name) {
   document.querySelectorAll(".screen").forEach(s => s.classList.toggle("active", s.dataset.screen === name));
   document.querySelectorAll(".nav-item").forEach(b => {
@@ -93,6 +95,8 @@ function showScreen(name) {
     b.classList.toggle("text-clay", active);
     b.classList.toggle("text-muted", !active);
   });
+  // esconde o menu inferior em telas de "fluxo" (execução, editor) — só aparece nas 5 abas principais
+  document.getElementById("bottomNav").style.display = TAB_SCREENS.includes(name) ? "flex" : "none";
   // sempre volta pro topo da tela ao trocar de aba/tela
   const activeMain = document.querySelector(`.screen[data-screen="${name}"] main`);
   if (activeMain) activeMain.scrollTop = 0;
@@ -459,7 +463,31 @@ function renderMuscleModel(ex) {
     svg.style.width = "100%";
     svg.style.height = "100%";
     svg.style.display = "block";
-    svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+    svg.setAttribute("preserveAspectRatio", "xMidYMid slice");
+
+    // "zoom" na região destacada: em vez de mostrar o corpo inteiro minúsculo,
+    // recorta o viewBox pra região que está colorida (o músculo trabalhado),
+    // deixando ela bem maior e mais visível dentro do quadradinho.
+    try {
+      const highlighted = svg.querySelectorAll('[fill="#E7B8A9"], [fill="#C9482F"]');
+      if (highlighted.length > 0) {
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        highlighted.forEach(el => {
+          const b = el.getBBox();
+          minX = Math.min(minX, b.x);
+          minY = Math.min(minY, b.y);
+          maxX = Math.max(maxX, b.x + b.width);
+          maxY = Math.max(maxY, b.y + b.height);
+        });
+        const bw = maxX - minX;
+        const bh = maxY - minY;
+        const padX = bw * 0.5;
+        const padY = bh * 0.3;
+        svg.setAttribute("viewBox", `${minX - padX} ${minY - padY} ${bw + padX * 2} ${bh + padY * 2}`);
+      }
+    } catch (e) {
+      // se o navegador não suportar getBBox por algum motivo, mantém o corpo inteiro
+    }
   });
 }
 
