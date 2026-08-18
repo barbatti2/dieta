@@ -35,13 +35,17 @@ const PROFILES = {
     nome: "Você",
     streak: 12,
     diasTreinados: [2, 4, 6, 9, 11, 12, 13, 15, 16],
-    cardioLog: []
+    cardioLog: [],
+    historicoLog: [],
+    concluidosHoje: []
   },
   parceira: {
     nome: "Sua parceira",
     streak: 7,
     diasTreinados: [3, 5, 8, 10, 13, 14, 16],
-    cardioLog: []
+    cardioLog: [],
+    historicoLog: [],
+    concluidosHoje: []
   }
 };
 
@@ -55,6 +59,7 @@ let state = {
   perfilAtual: "voce",
   calMonth: 7, // agosto = index 7 (0-based)
   calYear: 2026,
+  calSelectedDay: null,
   execucao: null,
   cardioTipo: "esteira",
   cardioIntensidade: "leve"
@@ -140,6 +145,7 @@ function renderHoje() {
 }
 
 function renderTodayWorkout() {
+  const p = currentProfile();
   const hoje = new Date().getDay(); // 0 = domingo ... 6 = sábado (dia real do dispositivo)
   const container = document.getElementById("todayWorkoutCard");
   const treinosHoje = TEMPLATES.filter(t => (t.dias || []).includes(hoje));
@@ -155,22 +161,38 @@ function renderTodayWorkout() {
     return;
   }
 
-  container.innerHTML = treinosHoje.map(t => `
-    <div class="bg-card border border-hairline rounded-2xl p-4 shadow-sm mb-3 last:mb-0">
-      <div class="flex items-center justify-between mb-3">
-        <div>
-          <span class="text-[10px] font-bold text-clay uppercase tracking-[0.2em]">${t.ficha}</span>
-          <h3 class="font-serif text-lg font-medium">${t.nome}</h3>
+  container.innerHTML = treinosHoje.map(t => {
+    const concluido = p.concluidosHoje.includes(t.id);
+    if (concluido) {
+      return `
+        <div class="bg-emerald/5 border border-emerald/30 rounded-2xl p-4 flex items-center gap-3 mb-3 last:mb-0">
+          <div class="w-9 h-9 bg-emerald rounded-full flex items-center justify-center text-white flex-shrink-0">
+            <i class="fa-solid fa-check text-xs"></i>
+          </div>
+          <div class="min-w-0">
+            <span class="text-[10px] font-bold text-emerald uppercase tracking-[0.15em]">${t.ficha} · Concluído</span>
+            <h3 class="font-serif text-base font-medium truncate">${t.nome}</h3>
+          </div>
         </div>
-        <div class="w-10 h-10 bg-paper rounded-xl flex items-center justify-center text-clay flex-shrink-0">
-          <i class="fa-solid fa-dumbbell"></i>
+      `;
+    }
+    return `
+      <div class="bg-card border border-hairline rounded-2xl p-4 shadow-sm mb-3 last:mb-0">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <span class="text-[10px] font-bold text-clay uppercase tracking-[0.2em]">${t.ficha}</span>
+            <h3 class="font-serif text-lg font-medium">${t.nome}</h3>
+          </div>
+          <div class="w-10 h-10 bg-paper rounded-xl flex items-center justify-center text-clay flex-shrink-0">
+            <i class="fa-solid fa-dumbbell"></i>
+          </div>
         </div>
+        <button class="start-today-btn w-full bg-ink text-white font-medium py-2.5 rounded-xl text-sm active:scale-[0.98] transition-all" data-template-id="${t.id}">
+          Iniciar Treino
+        </button>
       </div>
-      <button class="start-today-btn w-full bg-ink text-white font-medium py-2.5 rounded-xl text-sm active:scale-[0.98] transition-all" data-template-id="${t.id}">
-        Iniciar Treino
-      </button>
-    </div>
-  `).join("");
+    `;
+  }).join("");
 
   container.querySelectorAll(".start-today-btn").forEach(btn => {
     btn.addEventListener("click", () => startExecution(btn.dataset.templateId));
@@ -183,6 +205,13 @@ function marcarDiaTreinado() {
     p.diasTreinados.push(HOJE_DIA);
     p.streak++;
   }
+}
+
+const DATA_HORA_FORMAT = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+
+function registrarNoHistorico(entry) {
+  const p = currentProfile();
+  p.historicoLog.unshift({ ...entry, quando: DATA_HORA_FORMAT.format(new Date()) });
 }
 
 /* =========================================================
@@ -465,9 +494,13 @@ document.getElementById("mainExecBtn").addEventListener("click", () => {
   }
 
   // aqui entraria o salvamento real (Firestore) do treino concluído
+  const p = currentProfile();
+  if (!p.concluidosHoje.includes(t.id)) p.concluidosHoje.push(t.id);
+  registrarNoHistorico({ tipo: "treino", nome: t.nome, ficha: t.ficha, detalhe: `${t.exercicios.length} exercícios` });
   marcarDiaTreinado();
   renderHoje();
   renderCalendario();
+  renderHistorico();
   showToast("Treino concluído! 💪");
   showScreen("hoje");
 });
@@ -516,15 +549,22 @@ document.querySelectorAll(".intensity-btn").forEach(btn => {
   });
 });
 
-document.getElementById("cardioCloseBtn").addEventListener("click", () => showScreen("hoje"));
 document.getElementById("confirmCardioBtn").addEventListener("click", () => {
   const p = currentProfile();
   const minutos = document.getElementById("cardioMinValue").textContent;
+  const cardioLabels = { esteira: "Esteira", bike: "Bike", eliptico: "Elíptico", outro: "Outra atividade" };
+  const intensidadeLabels = { leve: "Leve", moderado: "Moderado", forte: "Forte" };
   // aqui entraria o salvamento real (Firestore)
   p.cardioLog.push({ tipo: state.cardioTipo, minutos, intensidade: state.cardioIntensidade, dia: HOJE_DIA });
+  registrarNoHistorico({
+    tipo: "cardio",
+    nome: cardioLabels[state.cardioTipo] || "Cardio",
+    detalhe: `${minutos} min · ${intensidadeLabels[state.cardioIntensidade] || ""}`
+  });
   marcarDiaTreinado();
   renderHoje();
   renderCalendario();
+  renderHistorico();
   showToast("Cardio salvo!");
   showScreen("hoje");
 });
@@ -538,11 +578,15 @@ const MONTH_NAMES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julh
 document.getElementById("calPrevBtn").addEventListener("click", () => {
   state.calMonth--;
   if (state.calMonth < 0) { state.calMonth = 11; state.calYear--; }
+  state.calSelectedDay = null;
+  document.getElementById("dayDetailWrap").style.display = "none";
   renderCalendario();
 });
 document.getElementById("calNextBtn").addEventListener("click", () => {
   state.calMonth++;
   if (state.calMonth > 11) { state.calMonth = 0; state.calYear++; }
+  state.calSelectedDay = null;
+  document.getElementById("dayDetailWrap").style.display = "none";
   renderCalendario();
 });
 
@@ -562,27 +606,73 @@ function renderCalendario() {
   for (let day = 1; day <= daysInMonth; day++) {
     const trained = isCurrentMonth && p.diasTreinados.includes(day);
     const isToday = isCurrentMonth && day === HOJE_DIA;
-    const cell = document.createElement("span");
+    const isSelected = state.calSelectedDay === day;
+
+    const cell = document.createElement("button");
     cell.textContent = day;
-    cell.className = "text-center py-3 text-xs font-medium rounded-full relative cursor-default " +
-      (isToday ? "font-bold bg-clay text-white shadow-lg shadow-clay/20" :
-       trained ? "bg-clay/5 text-clay" : "");
-    if (trained) {
-      cell.classList.add("cursor-pointer");
+    cell.className = "cal-day text-center py-3 text-xs font-medium rounded-full relative transition-all " +
+      (isSelected ? "bg-ink text-white scale-110 shadow-lg shadow-ink/20" :
+       isToday ? "font-bold bg-clay text-white shadow-lg shadow-clay/20" :
+       trained ? "bg-clay/5 text-clay" : "text-ink hover:bg-hairline/40");
+    if (trained && !isSelected) {
       cell.innerHTML += `<div class="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 ${isToday ? "bg-white" : "bg-clay"} rounded-full"></div>`;
-      cell.addEventListener("click", () => showDayDetail(day));
     }
+    cell.addEventListener("click", () => showDayDetail(day, trained));
     grid.appendChild(cell);
   }
-
-  document.getElementById("dayDetailWrap").style.display = "none";
 }
 
-function showDayDetail(day) {
-  document.getElementById("dayDetailWrap").style.display = "block";
-  document.getElementById("dayDetailTitle").textContent = `Detalhes: ${day} de ${MONTH_NAMES[state.calMonth]}`;
-  document.getElementById("dayDetailName").textContent = "Atividade registrada";
-  document.getElementById("dayDetailMeta").textContent = "Detalhes completos virão do histórico salvo no Firestore.";
+function showDayDetail(day, trained) {
+  state.calSelectedDay = day;
+  renderCalendario();
+
+  const wrap = document.getElementById("dayDetailWrap");
+  wrap.style.display = "block";
+  document.getElementById("dayDetailTitle").textContent = `${day} de ${MONTH_NAMES[state.calMonth]}`;
+
+  if (trained) {
+    document.getElementById("dayDetailName").textContent = "Treino ou cardio concluído";
+    document.getElementById("dayDetailMeta").textContent = "Detalhes completos virão do histórico salvo no Firestore.";
+  } else {
+    document.getElementById("dayDetailName").textContent = "Nenhuma atividade";
+    document.getElementById("dayDetailMeta").textContent = "Não há treino registrado neste dia.";
+  }
+
+  wrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+/* =========================================================
+   TELA "HISTÓRICO"
+   ========================================================= */
+
+function renderHistorico() {
+  const p = currentProfile();
+  const list = document.getElementById("historicoList");
+
+  if (p.historicoLog.length === 0) {
+    list.innerHTML = `
+      <div class="text-center py-12">
+        <p class="text-sm text-muted">Nenhum treino ou cardio registrado ainda.</p>
+        <p class="text-xs text-muted mt-1">Tudo que você concluir vai aparecer aqui.</p>
+      </div>
+    `;
+    return;
+  }
+
+  list.innerHTML = p.historicoLog.map(item => `
+    <div class="bg-card border border-hairline rounded-xl p-3.5 flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
+        item.tipo === "treino" ? "bg-claySoft/20 text-clay" : "bg-emerald/10 text-emerald"
+      }">
+        <i class="fa-solid ${item.tipo === "treino" ? "fa-dumbbell" : "fa-person-running"} text-xs"></i>
+      </div>
+      <div class="min-w-0 flex-1">
+        <p class="text-sm font-bold truncate">${item.nome}</p>
+        <p class="text-[11px] text-muted truncate">${item.detalhe || ""}</p>
+      </div>
+      <span class="text-[10px] text-muted flex-shrink-0">${item.quando}</span>
+    </div>
+  `).join("");
 }
 
 /* =========================================================
@@ -593,6 +683,7 @@ function renderAll() {
   renderProfileToggles();
   renderHoje();
   renderTemplateList();
+  renderHistorico();
   renderCalendario();
 }
 
