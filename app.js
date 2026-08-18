@@ -385,69 +385,7 @@ document.getElementById("editorDeleteBtn").addEventListener("click", () => {
 
 let highlighter = null;
 
-/* ---------------------------------------------------------
-   Salva o treino em andamento no localStorage, para que ele
-   não se perca caso o usuário saia da tela de execução (troque
-   de aba, feche o app ou dê refresh na página no meio do treino).
-   --------------------------------------------------------- */
-const EXEC_STORAGE_KEY = "treinoApp_execucaoEmAndamento";
-
-function salvarExecucaoLocal() {
-  try {
-    if (state.execucao) {
-      localStorage.setItem(EXEC_STORAGE_KEY, JSON.stringify({ perfil: state.perfilAtual, ...state.execucao }));
-    } else {
-      localStorage.removeItem(EXEC_STORAGE_KEY);
-    }
-  } catch (e) {
-    // localStorage pode estar indisponível (modo privado, etc.) — falha silenciosa
-  }
-}
-
-function carregarExecucaoLocal() {
-  try {
-    const raw = localStorage.getItem(EXEC_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch (e) {
-    return null;
-  }
-}
-
-// tenta restaurar um treino salvo (chamado uma vez, no boot do app)
-function restaurarExecucaoSalva() {
-  const saved = carregarExecucaoLocal();
-  if (!saved) return false;
-  const { perfil, ...execucao } = saved;
-  const t = TEMPLATES.find(x => x.id === execucao.templateId);
-  // validação defensiva: só restaura se a ficha salva ainda existir e tiver exercícios
-  if (!t || !t.exercicios || t.exercicios.length === 0 || execucao.exercicioIndex >= t.exercicios.length) {
-    localStorage.removeItem(EXEC_STORAGE_KEY);
-    return false;
-  }
-  if (perfil && PROFILES[perfil]) state.perfilAtual = perfil;
-  state.execucao = execucao;
-  return true;
-}
-
 function startExecution(templateId) {
-  const t = TEMPLATES.find(x => x.id === templateId);
-  // guarda contra ficha sem exercícios (ex: recém-criada e ainda não configurada):
-  // sem essa checagem, currentExercise() volta um objeto vazio e a renderização
-  // quebra no meio (era isso que deixava a tela em branco no lugar do menu).
-  if (!t || !t.exercicios || t.exercicios.length === 0) {
-    showToast("Adicione exercícios a esta ficha antes de iniciar");
-    if (t) openEditor(t.id);
-    return;
-  }
-
-  // se esse mesmo treino já está em andamento (ex: usuário saiu da tela no meio
-  // e voltou depois), continua de onde parou em vez de reiniciar do zero
-  if (state.execucao && state.execucao.templateId === templateId) {
-    showScreen("execucao");
-    renderExecucao();
-    return;
-  }
-
   state.execucao = {
     templateId,
     exercicioIndex: 0,
@@ -455,7 +393,6 @@ function startExecution(templateId) {
     reps: 10,
     log: [] // registra peso/reps de cada exercício conforme vai concluindo
   };
-  salvarExecucaoLocal();
   showScreen("execucao");
   renderExecucao();
 }
@@ -465,10 +402,7 @@ function currentTemplate() {
 }
 function currentExercise() {
   const exId = currentTemplate().exercicios[state.execucao.exercicioIndex];
-  const dados = EXERCISES[exId];
-  // fallback defensivo: se o id não existir no catálogo (exercício removido/renomeado),
-  // devolve um objeto completo em vez de um objeto pela metade que quebra o resto do render
-  return { id: exId, nome: "Exercício não encontrado", grupo: null, primary: [], secondary: [], imagem: "", ...dados };
+  return { id: exId, ...EXERCISES[exId] };
 }
 
 function renderExecucao() {
@@ -495,7 +429,7 @@ function renderExecucao() {
   document.getElementById("repsValue").textContent = ec.reps;
 
   document.getElementById("mainExecBtnLabel").textContent = isLast ? "Concluir Treino" : `Concluir ${ex.nome}`;
-  document.getElementById("prevExBtn").disabled = ec.exercicioIndex === 0;
+  document.getElementById("prevExBtn").style.visibility = ec.exercicioIndex === 0 ? "hidden" : "visible";
 
   renderMuscleModel(ex);
 }
@@ -505,12 +439,10 @@ function renderMuscleModel(ex) {
   if (highlighter) highlighter.destroy();
   container.innerHTML = "";
 
-  const primary = ex.primary || [];
-  const secondary = ex.secondary || [];
-  const hasBack = primary.some(m => backMuscles.includes(m));
+  const hasBack = ex.primary.some(m => backMuscles.includes(m));
   const data = [
-    { name: ex.nome + " (principal)", muscles: primary, frequency: 2 },
-    { name: ex.nome + " (secundário)", muscles: secondary, frequency: 1 }
+    { name: ex.nome + " (principal)", muscles: ex.primary, frequency: 2 },
+    { name: ex.nome + " (secundário)", muscles: ex.secondary, frequency: 1 }
   ];
 
   highlighter = createBodyHighlighter({
@@ -519,7 +451,7 @@ function renderMuscleModel(ex) {
     type: hasBack ? "posterior" : "anterior",
     bodyColor: "#D8D3C8",
     highlightedColors: ["#E7B8A9", "#C9482F"],
-    style: { width: "100%", height: "100%" }
+    style: { width: "24px" }
   });
 
   // a lib gera um SVG com proporção retangular (corpo inteiro); sem isso,
@@ -536,26 +468,8 @@ function renderMuscleModel(ex) {
     // "zoom" na região destacada: em vez de mostrar o corpo inteiro minúsculo,
     // recorta o viewBox pra região que está colorida (o músculo trabalhado),
     // deixando ela bem maior e mais visível dentro do quadradinho.
-    //
-    // OBS: a lib pinta os músculos via style.fill (inline), não via atributo
-    // fill — por isso não dá pra usar seletor [fill="..."]. Em vez de comparar
-    // strings de cor (que o navegador pode normalizar pra rgb()), comparamos
-    // a cor computada de cada forma com a cor computada do "bodyColor" (cor
-    // neutra dos músculos não trabalhados): tudo que for diferente disso é
-    // músculo destacado.
     try {
-      const probe = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-      probe.style.fill = "#D8D3C8"; // precisa bater com o bodyColor passado acima
-      svg.appendChild(probe);
-      const neutralFill = getComputedStyle(probe).fill;
-      probe.remove();
-
-      const shapes = svg.querySelectorAll("polygon, path, circle, ellipse, rect");
-      const highlighted = Array.from(shapes).filter(el => {
-        const fill = getComputedStyle(el).fill;
-        return fill && fill !== "none" && fill !== neutralFill;
-      });
-
+      const highlighted = svg.querySelectorAll('[fill="#E7B8A9"], [fill="#C9482F"]');
       if (highlighted.length > 0) {
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
         highlighted.forEach(el => {
@@ -567,13 +481,12 @@ function renderMuscleModel(ex) {
         });
         const bw = maxX - minX;
         const bh = maxY - minY;
-        // padding maior = zoom mais suave; menor = zoom mais forte
-        const padX = bw * 0.75;
-        const padY = bh * 0.55;
+        const padX = bw * 0.5;
+        const padY = bh * 0.3;
         svg.setAttribute("viewBox", `${minX - padX} ${minY - padY} ${bw + padX * 2} ${bh + padY * 2}`);
       }
     } catch (e) {
-      // se o navegador não suportar getBBox/getComputedStyle por algum motivo, mantém o corpo inteiro
+      // se o navegador não suportar getBBox por algum motivo, mantém o corpo inteiro
     }
   });
 }
@@ -593,15 +506,13 @@ document.querySelectorAll(".stepper").forEach(btn => {
     if (target === "reps") ec.reps = Math.max(0, ec.reps + dir);
     document.getElementById("weightValue").textContent = ec.weight;
     document.getElementById("repsValue").textContent = ec.reps;
-    salvarExecucaoLocal();
   });
 });
 
 document.getElementById("prevExBtn").addEventListener("click", () => {
   const ec = state.execucao;
-  if (ec && ec.exercicioIndex > 0) {
+  if (ec.exercicioIndex > 0) {
     ec.exercicioIndex--;
-    salvarExecucaoLocal();
     renderExecucao();
   }
 });
@@ -618,7 +529,6 @@ document.getElementById("mainExecBtn").addEventListener("click", () => {
 
   if (!isLast) {
     ec.exercicioIndex++;
-    salvarExecucaoLocal();
     renderExecucao();
     return;
   }
@@ -635,7 +545,6 @@ document.getElementById("mainExecBtn").addEventListener("click", () => {
   });
   marcarDiaTreinado();
   state.execucao = null;
-  salvarExecucaoLocal(); // treino concluído: limpa o que estava salvo
   renderHoje();
   renderCalendario();
   renderHistorico();
@@ -643,14 +552,7 @@ document.getElementById("mainExecBtn").addEventListener("click", () => {
   showScreen("hoje");
 });
 
-document.getElementById("execCloseBtn").addEventListener("click", () => {
-  // garante que o progresso atual fique salvo ao sair da tela de execução
-  salvarExecucaoLocal();
-  showScreen("treinos");
-});
-
-// rede de segurança extra: se o usuário fechar/recarregar a aba no meio do treino
-window.addEventListener("beforeunload", salvarExecucaoLocal);
+document.getElementById("execCloseBtn").addEventListener("click", () => showScreen("treinos"));
 
 /* =========================================================
    TELA "CARDIO"
@@ -860,11 +762,4 @@ function renderAll() {
   renderCalendario();
 }
 
-// se havia um treino em andamento (usuário saiu no meio), volta direto pra ele
-const tinhaExecucaoSalva = restaurarExecucaoSalva();
 renderAll();
-if (tinhaExecucaoSalva) {
-  renderExecucao();
-  showScreen("execucao");
-  showToast("Continuando de onde você parou 💪");
-}
