@@ -84,6 +84,43 @@ function showToast(msg) {
 }
 
 /* =========================================================
+   DIÁLOGO DE CONFIRMAÇÃO
+   ========================================================= */
+
+function showConfirmDialog(titulo, mensagem, labelConfirm = "Confirmar", labelCancel = "Cancelar") {
+  return new Promise((resolve) => {
+    const dialog = document.createElement("div");
+    dialog.className = "fixed inset-0 bg-black/50 flex items-end z-[100]";
+    dialog.innerHTML = `
+      <div class="w-full bg-card rounded-t-3xl p-6 animate-in slide-in-from-bottom">
+        <h2 class="text-lg font-bold text-ink mb-2">${titulo}</h2>
+        <p class="text-sm text-muted mb-6">${mensagem}</p>
+        <div class="flex gap-3">
+          <button class="flex-1 bg-paper border border-hairline text-ink font-medium py-3 rounded-xl hover:bg-hairline/10 transition-all active:scale-[0.98]">
+            ${labelCancel}
+          </button>
+          <button class="flex-1 bg-ink text-white font-medium py-3 rounded-xl hover:bg-black transition-all active:scale-[0.98]">
+            ${labelConfirm}
+          </button>
+        </div>
+      </div>
+    `;
+    
+    const buttons = dialog.querySelectorAll("button");
+    buttons[0].addEventListener("click", () => {
+      dialog.remove();
+      resolve(false);
+    });
+    buttons[1].addEventListener("click", () => {
+      dialog.remove();
+      resolve(true);
+    });
+    
+    document.body.appendChild(dialog);
+  });
+}
+
+/* =========================================================
    NAVEGAÇÃO
    ========================================================= */
 
@@ -122,6 +159,7 @@ document.addEventListener("click", (e) => {
   if (!btn) return;
   if (btn.dataset.profile === state.perfilAtual) return;
   state.perfilAtual = btn.dataset.profile;
+  // Reset perfis separados: cada perfil tem seu próprio hojeTemplateId
   renderAll();
 });
 
@@ -199,46 +237,190 @@ function renderTodayWorkout() {
   if (concluido) {
     container.innerHTML = `
       <div class="bg-emerald/5 border border-emerald/30 rounded-2xl p-4 flex items-center gap-3">
-        <div class="w-9 h-9 bg-emerald rounded-full flex items-center justify-center text-white flex-shrink-0">
-          <i class="fa-solid fa-check text-xs"></i>
+        <div class="w-10 h-10 rounded-full bg-emerald/10 flex items-center justify-center text-emerald flex-shrink-0">
+          <i class="fa-solid fa-check text-lg"></i>
         </div>
-        <div class="min-w-0 flex-1">
-          <span class="text-[10px] font-bold text-emerald uppercase tracking-[0.15em]">${t.ficha} · Concluído</span>
-          <h3 class="font-serif text-base font-medium truncate">${t.nome}</h3>
+        <div class="flex-1">
+          <p class="text-sm font-bold text-emerald">Treino concluído!</p>
+          <p class="text-[11px] text-emerald/70">${t.nome}</p>
         </div>
       </div>
-      <button id="trocarTreinoBtn" class="mt-3 text-xs font-bold text-clay uppercase tracking-widest">Escolher outro treino</button>
+      <button id="reopenTrainingBtn" class="w-full mt-3 bg-paper border border-hairline text-ink font-medium py-3 rounded-xl hover:border-clay/40 transition-all active:scale-[0.98]">
+        <i class="fa-solid fa-rotate-left mr-2"></i>Reabrir Treino
+      </button>
     `;
-    document.getElementById("trocarTreinoBtn").addEventListener("click", () => {
-      state.hojeTemplateId = null;
-      renderTodayWorkout();
+    document.getElementById("reopenTrainingBtn").addEventListener("click", async () => {
+      const confirmed = await showConfirmDialog(
+        "Reabrir treino?",
+        `Tem certeza que deseja reabrir o treino "${t.nome}"?`,
+        "Reabrir",
+        "Cancelar"
+      );
+      if (confirmed) {
+        p.concluidosHoje = p.concluidosHoje.filter(id => id !== t.id);
+        state.execucao = { templateId: t.id, exercicios: t.exercicios.map(exId => ({ exId, peso: "0", reps: "0" })) };
+        renderTodayWorkout();
+        showToast("Treino reabierto!");
+      }
+    });
+    return;
+  }
+
+  if (emAndamento) {
+    container.innerHTML = `
+      <div class="bg-card border border-hairline rounded-2xl p-4 shadow-sm space-y-3">
+        <div class="flex items-start gap-3">
+          <div class="w-9 h-9 rounded-lg bg-clay/10 flex items-center justify-center text-clay flex-shrink-0">
+            <i class="fa-solid fa-dumbbell text-xs"></i>
+          </div>
+          <div class="min-w-0 flex-1">
+            <span class="text-[9px] font-bold text-clay uppercase tracking-[0.15em]">${t.ficha}</span>
+            <h3 class="font-serif text-sm font-medium">${t.nome}</h3>
+          </div>
+        </div>
+        <button id="continueTrainingBtn" class="w-full bg-clay text-white font-medium py-3 rounded-lg hover:bg-clay/90 transition-all active:scale-[0.98]">
+          Continuar Treino
+        </button>
+      </div>
+    `;
+    document.getElementById("continueTrainingBtn").addEventListener("click", () => {
+      showScreen("treino-editor");
+      renderTrainingEditor();
     });
     return;
   }
 
   container.innerHTML = `
-    <div class="bg-card border border-hairline rounded-2xl p-4 shadow-sm">
-      <div class="flex items-center justify-between mb-3">
-        <div>
-          <span class="text-[10px] font-bold text-clay uppercase tracking-[0.2em]">${t.ficha}</span>
-          <h3 class="font-serif text-lg font-medium">${t.nome}</h3>
-          ${emAndamento ? `<p class="text-[11px] text-muted mt-0.5">Exercício ${state.execucao.exercicioIndex + 1} de ${t.exercicios.length}</p>` : ""}
+    <div class="bg-card border border-hairline rounded-2xl p-4 shadow-sm space-y-3">
+      <div class="flex items-start gap-3">
+        <div class="w-9 h-9 rounded-lg bg-clay/10 flex items-center justify-center text-clay flex-shrink-0">
+          <i class="fa-solid fa-dumbbell text-xs"></i>
         </div>
-        <div class="w-10 h-10 bg-paper rounded-xl flex items-center justify-center text-clay flex-shrink-0">
-          <i class="fa-solid fa-dumbbell"></i>
+        <div class="min-w-0 flex-1">
+          <span class="text-[9px] font-bold text-clay uppercase tracking-[0.15em]">${t.ficha}</span>
+          <h3 class="font-serif text-sm font-medium">${t.nome}</h3>
+          <p class="text-[11px] text-muted mt-1">${t.tags.join(", ")}</p>
         </div>
       </div>
-      <button class="start-today-btn w-full bg-ink text-white font-medium py-2.5 rounded-xl text-sm active:scale-[0.98] transition-all" data-template-id="${t.id}">
-        ${emAndamento ? "Continuar Treino" : "Iniciar Treino"}
+      <button id="startTrainingBtn" class="w-full bg-clay text-white font-medium py-3 rounded-lg hover:bg-clay/90 transition-all active:scale-[0.98]">
+        Iniciar Treino
       </button>
-      <button id="trocarTreinoBtn" class="mt-2 w-full text-xs font-bold text-muted uppercase tracking-widest py-1">Escolher outro treino</button>
+      <button id="changeTemplateBtn" class="w-full bg-paper border border-hairline text-ink font-medium py-3 rounded-lg hover:border-clay/40 transition-all active:scale-[0.98]">
+        Escolher Outra Ficha
+      </button>
     </div>
   `;
 
-  container.querySelector(".start-today-btn").addEventListener("click", () => startExecution(t.id));
-  document.getElementById("trocarTreinoBtn").addEventListener("click", () => {
+  document.getElementById("startTrainingBtn").addEventListener("click", () => {
+    state.execucao = {
+      templateId: t.id,
+      exercicios: t.exercicios.map(exId => ({ exId, peso: "0", reps: "0" }))
+    };
+    showScreen("treino-editor");
+    renderTrainingEditor();
+  });
+
+  document.getElementById("changeTemplateBtn").addEventListener("click", () => {
     state.hojeTemplateId = null;
     renderTodayWorkout();
+  });
+}
+
+function renderTrainingEditor() {
+  const template = TEMPLATES.find(x => x.id === state.execucao.templateId);
+  if (!template) return;
+
+  const screen = document.querySelector('.screen[data-screen="treino-editor"]');
+  screen.innerHTML = `
+    <header class="flex-shrink-0 px-6 pt-12 pb-4 flex justify-between items-center bg-paper">
+      <button id="backTrainingBtn" class="text-muted hover:text-ink">
+        <i class="fa-solid fa-chevron-left text-lg"></i>
+      </button>
+      <h1 class="font-serif text-2xl font-medium flex-1 text-center">${template.nome}</h1>
+      <div class="w-6"></div>
+    </header>
+
+    <main class="flex-1 min-h-0 overflow-y-auto px-6 pb-8 space-y-4" id="exercisesContainer"></main>
+
+    <div class="flex-shrink-0 px-6 py-4 bg-paper border-t border-hairline flex gap-3">
+      <button id="cancelTrainingBtn" class="flex-1 bg-paper border border-hairline text-ink font-medium py-3 rounded-xl hover:border-clay/40 transition-all">
+        Cancelar
+      </button>
+      <button id="finishTrainingBtn" class="flex-1 bg-clay text-white font-medium py-3 rounded-xl hover:bg-clay/90 transition-all">
+        Concluir Treino
+      </button>
+    </div>
+  `;
+
+  const container = document.getElementById("exercisesContainer");
+  state.execucao.exercicios.forEach((ex, idx) => {
+    const exData = EXERCISES.find(x => x.id === ex.exId);
+    if (!exData) return;
+
+    const card = document.createElement("div");
+    card.className = "bg-card border border-hairline rounded-2xl p-4 space-y-3";
+    card.innerHTML = `
+      <div class="flex items-start gap-3">
+        <div class="w-9 h-9 rounded-lg bg-clay/10 flex items-center justify-center text-clay flex-shrink-0">
+          <i class="fa-solid fa-dumbbell text-xs"></i>
+        </div>
+        <div class="min-w-0 flex-1">
+          <h4 class="font-bold text-sm">${exData.nome}</h4>
+          <p class="text-[11px] text-muted">${exData.tags.join(", ")}</p>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-[10px] font-bold text-muted uppercase block mb-1">Peso (kg)</label>
+          <input type="number" value="${ex.peso}" class="w-full border border-hairline rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-clay" data-idx="${idx}" data-field="peso">
+        </div>
+        <div>
+          <label class="text-[10px] font-bold text-muted uppercase block mb-1">Repetições</label>
+          <input type="number" value="${ex.reps}" class="w-full border border-hairline rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-clay" data-idx="${idx}" data-field="reps">
+        </div>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+
+  document.querySelectorAll("#exercisesContainer input").forEach(input => {
+    input.addEventListener("change", (e) => {
+      const idx = parseInt(e.target.dataset.idx);
+      const field = e.target.dataset.field;
+      state.execucao.exercicios[idx][field] = e.target.value || "0";
+    });
+  });
+
+  document.getElementById("backTrainingBtn").addEventListener("click", () => {
+    showScreen("hoje");
+  });
+
+  document.getElementById("cancelTrainingBtn").addEventListener("click", () => {
+    state.execucao = null;
+    showScreen("hoje");
+    renderTodayWorkout();
+  });
+
+  document.getElementById("finishTrainingBtn").addEventListener("click", () => {
+    const p = currentProfile();
+    if (!state.execucao.templateId) return;
+    p.concluidosHoje.push(state.execucao.templateId);
+    registrarNoHistorico({
+      tipo: "treino",
+      nome: template.nome,
+      detalhe: `${state.execucao.exercicios.length} exercícios`,
+      exercicios: state.execucao.exercicios.map(ex => {
+        const exData = EXERCISES.find(x => x.id === ex.exId);
+        return { nome: exData.nome, peso: ex.peso, reps: ex.reps };
+      })
+    });
+    marcarDiaTreinado();
+    state.execucao = null;
+    renderHoje();
+    renderCalendario();
+    renderHistorico();
+    showToast("Treino concluído!");
+    showScreen("hoje");
   });
 }
 
@@ -250,374 +432,99 @@ function marcarDiaTreinado() {
   }
 }
 
-const DATA_HORA_FORMAT = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
-
-function registrarNoHistorico(entry) {
+function registrarNoHistorico(item) {
   const p = currentProfile();
-  p.historicoLog.unshift({ ...entry, quando: DATA_HORA_FORMAT.format(new Date()) });
+  const hoje = new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+  p.historicoLog.unshift({
+    ...item,
+    quando: hoje,
+    id: Math.random().toString(36).substr(2, 9)
+  });
 }
 
 /* =========================================================
-   TELA "TREINOS"
+   TELA "TREINOS" (lista de templates)
    ========================================================= */
 
 function renderTemplateList() {
   const list = document.getElementById("templateList");
   list.innerHTML = "";
   TEMPLATES.forEach(t => {
-    const card = document.createElement("article");
-    card.className = "bg-card border border-hairline rounded-xl p-3 shadow-sm group hover:border-clay/30 transition-all";
-    const diasTexto = (t.dias || []).length
-      ? t.dias.slice().sort().map(d => WEEKDAY_LABELS[d]).join(" · ")
-      : "Sem dia definido";
+    const card = document.createElement("div");
+    card.className = "bg-card border border-hairline rounded-2xl p-4 shadow-sm";
     card.innerHTML = `
-      <div class="flex items-center justify-between gap-3">
-        <div class="min-w-0 flex-1 cursor-pointer template-open">
-          <span class="text-[9px] font-bold text-clay uppercase tracking-[0.15em]">${t.ficha}</span>
-          <h3 class="font-serif text-base font-medium truncate">${t.nome}</h3>
-          <p class="text-[11px] text-muted mt-0.5">${t.exercicios.length} exercícios · ${diasTexto}</p>
-        </div>
-        <div class="flex items-center gap-1.5 flex-shrink-0">
-          <button class="template-edit w-8 h-8 bg-paper rounded-lg flex items-center justify-center text-muted hover:text-clay transition-all">
-            <i class="fa-solid fa-pen text-[11px]"></i>
-          </button>
-          <div class="template-open w-8 h-8 bg-paper rounded-lg flex items-center justify-center text-ink group-hover:bg-clay group-hover:text-white transition-all cursor-pointer">
-            <i class="fa-solid fa-chevron-right text-[11px]"></i>
-          </div>
-        </div>
-      </div>
-    `;
-    card.querySelectorAll(".template-open").forEach(el => {
-      el.addEventListener("click", () => openEditor(t.id));
-    });
-    card.querySelector(".template-edit").addEventListener("click", (e) => {
-      e.stopPropagation();
-      openEditor(t.id);
-    });
-    list.appendChild(card);
-  });
-}
-
-/* =========================================================
-   EDITOR DE EXERCÍCIOS DO TREINO
-   ========================================================= */
-
-let editorTemplateId = null;
-
-function openEditor(templateId) {
-  editorTemplateId = templateId;
-  const t = TEMPLATES.find(x => x.id === templateId);
-  document.getElementById("editorFicha").textContent = t.ficha;
-  const input = document.getElementById("editorTitleInput");
-  input.value = t.nome;
-  input.oninput = () => { t.nome = input.value; };
-  renderEditorWeekdays();
-  renderEditorList();
-  showScreen("editor");
-}
-
-function renderEditorWeekdays() {
-  const t = TEMPLATES.find(x => x.id === editorTemplateId);
-  const wrap = document.getElementById("editorWeekdays");
-  wrap.innerHTML = "";
-  WEEKDAY_LABELS.forEach((label, idx) => {
-    const active = (t.dias || []).includes(idx);
-    const btn = document.createElement("button");
-    btn.className = `weekday-btn flex-1 py-2.5 rounded-lg border border-hairline text-xs font-bold transition-all ${active ? "active" : "bg-card text-ink"}`;
-    btn.textContent = label;
-    btn.title = WEEKDAY_FULL[idx];
-    btn.addEventListener("click", () => {
-      if (!t.dias) t.dias = [];
-      const i = t.dias.indexOf(idx);
-      if (i >= 0) t.dias.splice(i, 1);
-      else t.dias.push(idx);
-      renderEditorWeekdays();
-    });
-    wrap.appendChild(btn);
-  });
-}
-
-function createNewTemplate() {
-  const nextLetter = String.fromCharCode(65 + TEMPLATES.length); // A, B, C, D...
-  const novo = {
-    id: "custom-" + Date.now(),
-    nome: "Novo Treino",
-    ficha: "Ficha " + nextLetter,
-    tags: [],
-    dias: [],
-    exercicios: []
-  };
-  TEMPLATES.push(novo);
-  openEditor(novo.id);
-}
-document.getElementById("createTemplateBtn").addEventListener("click", createNewTemplate);
-
-function renderEditorList() {
-  const t = TEMPLATES.find(x => x.id === editorTemplateId);
-  const list = document.getElementById("editorExerciseList");
-  list.innerHTML = "";
-
-  GROUPS.forEach(group => {
-    const idsDoGrupo = Object.entries(EXERCISES).filter(([, ex]) => ex.grupo === group.id);
-    if (idsDoGrupo.length === 0) return;
-
-    const header = document.createElement("p");
-    header.className = "text-[10px] font-bold text-muted uppercase tracking-[0.2em] px-2 pt-4 pb-1 first:pt-0";
-    header.textContent = group.nome;
-    list.appendChild(header);
-
-    idsDoGrupo.forEach(([id, ex]) => {
-      const included = t.exercicios.includes(id);
-      const row = document.createElement("button");
-      row.className = `w-full flex items-center justify-between gap-3 p-3.5 rounded-xl border transition-all text-left mb-2 ${
-        included ? "border-clay bg-claySoft/10" : "border-hairline bg-card"
-      }`;
-      const musclesText = [...ex.primary, ...ex.secondary].map(m => muscleLabels[m] || m).join(", ");
-      row.innerHTML = `
-        <div class="w-11 h-11 rounded-lg overflow-hidden bg-paper border border-hairline flex-shrink-0">
-          <img src="${ex.imagem || ""}" alt="" class="w-full h-full object-cover">
+      <div class="flex items-start gap-3 mb-3">
+        <div class="w-9 h-9 rounded-lg bg-clay/10 flex items-center justify-center text-clay flex-shrink-0">
+          <i class="fa-solid fa-dumbbell text-xs"></i>
         </div>
         <div class="min-w-0 flex-1">
-          <p class="text-sm font-bold truncate">${ex.nome}</p>
-          <p class="text-[11px] text-muted truncate">${musclesText} · ${ex.equipamento}</p>
+          <span class="text-[9px] font-bold text-clay uppercase tracking-[0.15em]">${t.ficha}</span>
+          <h3 class="font-serif text-sm font-medium">${t.nome}</h3>
+          <p class="text-[11px] text-muted mt-1">${t.tags.join(", ")}</p>
         </div>
-        <div class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
-          included ? "bg-clay text-white" : "border border-hairline text-transparent"
-        }">
-          <i class="fa-solid fa-check text-[10px]"></i>
-        </div>
-      `;
-      row.addEventListener("click", () => {
-        const idx = t.exercicios.indexOf(id);
-        if (idx >= 0) t.exercicios.splice(idx, 1);
-        else t.exercicios.push(id);
-        renderEditorList();
-      });
-      list.appendChild(row);
+      </div>
+      <div class="flex gap-2">
+        <button class="flex-1 bg-paper border border-hairline text-ink text-sm font-medium py-2 rounded-lg hover:border-clay/40 transition-all view-template-btn" data-template-id="${t.id}">
+          Ver Detalhes
+        </button>
+      </div>
+    `;
+    list.appendChild(card);
+
+    card.querySelector(".view-template-btn").addEventListener("click", () => {
+      state.selectedTemplateId = t.id;
+      showScreen("template-detail");
+      renderTemplateDetail();
     });
   });
 }
 
-document.getElementById("editorBackBtn").addEventListener("click", () => showScreen("treinos"));
-document.getElementById("editorSaveBtn").addEventListener("click", () => {
-  // aqui entraria o salvamento real (Firestore) do template atualizado
-  renderTemplateList();
-  renderHoje();
-  showToast("Treino salvo!");
-  showScreen("treinos");
-});
-document.getElementById("editorDeleteBtn").addEventListener("click", () => {
-  if (!confirm("Excluir esta ficha de treino?")) return;
-  const idx = TEMPLATES.findIndex(t => t.id === editorTemplateId);
-  if (idx >= 0) TEMPLATES.splice(idx, 1);
-  renderTemplateList();
-  renderHoje();
-  showScreen("treinos");
-});
+function renderTemplateDetail() {
+  const t = TEMPLATES.find(x => x.id === state.selectedTemplateId);
+  if (!t) return;
 
-/* =========================================================
-   TELA "EXECUÇÃO"
-   ========================================================= */
+  const screen = document.querySelector('.screen[data-screen="template-detail"]');
+  screen.innerHTML = `
+    <header class="flex-shrink-0 px-6 pt-12 pb-4 flex justify-between items-center bg-paper">
+      <button id="backTemplateBtn" class="text-muted hover:text-ink">
+        <i class="fa-solid fa-chevron-left text-lg"></i>
+      </button>
+      <h1 class="font-serif text-lg font-medium flex-1 text-center">${t.ficha}</h1>
+      <div class="w-6"></div>
+    </header>
 
-let highlighter = null;
+    <main class="flex-1 min-h-0 overflow-y-auto px-6 pb-8">
+      <div class="bg-card border border-hairline rounded-2xl p-4 shadow-sm mb-4">
+        <h2 class="font-serif text-xl font-medium mb-2">${t.nome}</h2>
+        <div class="flex flex-wrap gap-2">
+          ${t.tags.map(tag => `<span class="text-[10px] bg-clay/10 text-clay font-bold px-2.5 py-1 rounded-full uppercase">${tag}</span>`).join("")}
+        </div>
+      </div>
 
-function startExecution(templateId) {
-  state.hojeTemplateId = templateId;
-  // se já tem um treino dessa mesma ficha em andamento, retoma de onde parou;
-  // só começa do zero se for uma ficha diferente ou não houver nada rolando
-  if (!state.execucao || state.execucao.templateId !== templateId) {
-    state.execucao = {
-      templateId,
-      exercicioIndex: 0,
-      weight: 40,
-      reps: 10,
-      log: [] // registra peso/reps de cada exercício conforme vai concluindo
-    };
-  }
-  showScreen("execucao");
-  renderExecucao();
+      <div class="space-y-2">
+        <h3 class="text-[10px] font-bold text-muted uppercase tracking-[0.2em] px-1">Exercícios (${t.exercicios.length})</h3>
+        ${t.exercicios.map(exId => {
+          const ex = EXERCISES.find(x => x.id === exId);
+          return ex ? `
+            <div class="bg-card border border-hairline rounded-xl p-3">
+              <p class="font-medium text-sm">${ex.nome}</p>
+              <p class="text-[11px] text-muted mt-1">${ex.tags.join(", ")}</p>
+            </div>
+          ` : "";
+        }).join("")}
+      </div>
+    </main>
+
+    <div class="flex-shrink-0 px-6 py-4 bg-paper border-t border-hairline">
+      <button id="backTemplateBtn2" class="w-full bg-paper border border-hairline text-ink font-medium py-3 rounded-xl hover:border-clay/40 transition-all">
+        Voltar
+      </button>
+    </div>
+  `;
+
+  document.getElementById("backTemplateBtn").addEventListener("click", () => showScreen("treinos"));
+  document.getElementById("backTemplateBtn2").addEventListener("click", () => showScreen("treinos"));
 }
-
-function currentTemplate() {
-  return TEMPLATES.find(t => t.id === state.execucao.templateId);
-}
-function currentExercise() {
-  const exId = currentTemplate().exercicios[state.execucao.exercicioIndex];
-  return { id: exId, ...EXERCISES[exId] };
-}
-
-function renderExecucao() {
-  const t = currentTemplate();
-  const ex = currentExercise();
-  const ec = state.execucao;
-  const isLast = ec.exercicioIndex === t.exercicios.length - 1;
-
-  document.getElementById("execIndex").textContent = `${ec.exercicioIndex + 1} / ${t.exercicios.length}`;
-  document.getElementById("execProgressBar").style.width = `${((ec.exercicioIndex) / t.exercicios.length) * 100}%`;
-  document.getElementById("execName").textContent = ex.nome;
-
-  const focusText = [...ex.primary, ...ex.secondary].map(m => muscleLabels[m] || m).join(", ");
-  document.getElementById("execFocus").textContent = focusText || "—";
-
-  const grupo = GROUPS.find(g => g.id === ex.grupo);
-  document.getElementById("execGroupTag").textContent = grupo ? grupo.nome : "";
-
-  const img = document.getElementById("execImage");
-  img.src = ex.imagem || "";
-  img.alt = ex.nome;
-
-  document.getElementById("weightValue").textContent = ec.weight;
-  document.getElementById("repsValue").textContent = ec.reps;
-
-  document.getElementById("mainExecBtnLabel").textContent = isLast ? "Concluir Treino" : "Próximo";
-  const mainIcon = document.getElementById("mainExecBtnIcon");
-  mainIcon.className = isLast ? "fa-solid fa-check text-xs" : "fa-solid fa-chevron-right text-xs";
-  document.getElementById("prevExBtn").disabled = ec.exercicioIndex === 0;
-
-  renderMuscleModel(ex);
-}
-
-function renderMuscleModel(ex) {
-  const container = document.getElementById("execModel");
-  if (highlighter) highlighter.destroy();
-  container.innerHTML = "";
-
-  const hasBack = ex.primary.some(m => backMuscles.includes(m));
-  const data = [
-    { name: ex.nome + " (principal)", muscles: ex.primary, frequency: 2 },
-    { name: ex.nome + " (secundário)", muscles: ex.secondary, frequency: 1 }
-  ];
-
-  highlighter = createBodyHighlighter({
-    container,
-    data,
-    type: hasBack ? "posterior" : "anterior",
-    bodyColor: "#D8D3C8",
-    highlightedColors: ["#E7B8A9", "#C9482F"],
-    style: { width: "100%", height: "100%" }
-  });
-
-  // a lib gera um SVG com proporção retangular (corpo inteiro); sem isso,
-  // ele "vaza" pra fora do quadradinho de 40x40 e invade a foto acima.
-  // Escalamos o SVG pra caber inteiro dentro do container, sem cortar nem vazar.
-  requestAnimationFrame(() => {
-    const svg = container.querySelector("svg");
-    if (!svg) return;
-    svg.style.width = "100%";
-    svg.style.height = "100%";
-    svg.style.display = "block";
-    svg.setAttribute("preserveAspectRatio", "xMidYMid slice");
-
-    // "zoom" na região destacada: em vez de mostrar o corpo inteiro minúsculo,
-    // recorta o viewBox pra região que está colorida (o músculo trabalhado),
-    // deixando ela bem maior e mais visível dentro do quadradinho.
-    //
-    // OBS: a lib pinta os músculos via style.fill (inline), não via atributo
-    // fill — por isso não dá pra usar seletor [fill="..."]. Em vez de comparar
-    // strings de cor (que o navegador pode normalizar pra rgb()), comparamos
-    // a cor computada de cada forma com a cor computada do "bodyColor" (cor
-    // neutra dos músculos não trabalhados): tudo que for diferente disso é
-    // músculo destacado.
-    try {
-      const probe = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-      probe.style.fill = "#D8D3C8"; // precisa bater com o bodyColor passado acima
-      svg.appendChild(probe);
-      const neutralFill = getComputedStyle(probe).fill;
-      probe.remove();
-
-      const shapes = svg.querySelectorAll("polygon, path, circle, ellipse, rect");
-      const highlighted = Array.from(shapes).filter(el => {
-        const fill = getComputedStyle(el).fill;
-        return fill && fill !== "none" && fill !== neutralFill;
-      });
-
-      if (highlighted.length > 0) {
-        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-        highlighted.forEach(el => {
-          const b = el.getBBox();
-          minX = Math.min(minX, b.x);
-          minY = Math.min(minY, b.y);
-          maxX = Math.max(maxX, b.x + b.width);
-          maxY = Math.max(maxY, b.y + b.height);
-        });
-        const bw = maxX - minX;
-        const bh = maxY - minY;
-        // padding maior = zoom mais suave; menor = zoom mais forte
-        const padX = bw * 0.75;
-        const padY = bh * 0.55;
-        svg.setAttribute("viewBox", `${minX - padX} ${minY - padY} ${bw + padX * 2} ${bh + padY * 2}`);
-      }
-    } catch (e) {
-      // se o navegador não suportar getBBox/getComputedStyle por algum motivo, mantém o corpo inteiro
-    }
-  });
-}
-
-document.querySelectorAll(".stepper").forEach(btn => {
-  btn.addEventListener("click", () => {
-    const target = btn.dataset.target;
-    const dir = parseInt(btn.dataset.dir, 10);
-    if (target === "cardioMin") {
-      const el = document.getElementById("cardioMinValue");
-      el.textContent = Math.max(0, parseInt(el.textContent, 10) + dir * 5);
-      return;
-    }
-    const ec = state.execucao;
-    if (!ec) return;
-    if (target === "weight") ec.weight = Math.max(0, ec.weight + dir * 2.5);
-    if (target === "reps") ec.reps = Math.max(0, ec.reps + dir);
-    document.getElementById("weightValue").textContent = ec.weight;
-    document.getElementById("repsValue").textContent = ec.reps;
-  });
-});
-
-document.getElementById("prevExBtn").addEventListener("click", () => {
-  const ec = state.execucao;
-  if (ec.exercicioIndex > 0) {
-    ec.exercicioIndex--;
-    renderExecucao();
-  }
-});
-
-document.getElementById("mainExecBtn").addEventListener("click", () => {
-  const ec = state.execucao;
-  if (!ec) return; // segurança: evita clique duplicado depois de já ter concluído
-  const t = currentTemplate();
-  const ex = currentExercise();
-  const isLast = ec.exercicioIndex === t.exercicios.length - 1;
-
-  // guarda o peso/reps usados neste exercício antes de avançar
-  ec.log.push({ nome: ex.nome, peso: ec.weight, reps: ec.reps });
-
-  if (!isLast) {
-    ec.exercicioIndex++;
-    renderExecucao();
-    return;
-  }
-
-  // aqui entraria o salvamento real (Firestore) do treino concluído
-  const p = currentProfile();
-  if (!p.concluidosHoje.includes(t.id)) p.concluidosHoje.push(t.id);
-  registrarNoHistorico({
-    tipo: "treino",
-    nome: t.nome,
-    ficha: t.ficha,
-    detalhe: `${t.exercicios.length} exercícios`,
-    exercicios: ec.log
-  });
-  marcarDiaTreinado();
-  state.execucao = null;
-  renderHoje();
-  renderCalendario();
-  renderHistorico();
-  showToast("Treino concluído! 💪");
-  showScreen("hoje");
-});
-
-document.getElementById("execCloseBtn").addEventListener("click", () => {
-  renderTodayWorkout();
-  showScreen("hoje");
-});
 
 /* =========================================================
    TELA "CARDIO"
@@ -627,7 +534,6 @@ document.querySelectorAll(".cardio-type-btn").forEach(btn => {
   btn.addEventListener("click", () => {
     state.cardioTipo = btn.dataset.type;
     document.querySelectorAll(".cardio-type-btn").forEach(b => {
-      b.classList.remove("border-2", "border-clay");
       b.classList.add("border", "border-hairline");
       b.querySelector("i").classList.remove("text-clay");
       b.querySelector("i").classList.add("text-muted");
@@ -666,7 +572,6 @@ document.getElementById("confirmCardioBtn").addEventListener("click", () => {
   const minutos = document.getElementById("cardioMinValue").textContent;
   const cardioLabels = { esteira: "Esteira", bike: "Bike", eliptico: "Elíptico", outro: "Outra atividade" };
   const intensidadeLabels = { leve: "Leve", moderado: "Moderado", forte: "Forte" };
-  // aqui entraria o salvamento real (Firestore)
   p.cardioLog.push({ tipo: state.cardioTipo, minutos, intensidade: state.cardioIntensidade, dia: HOJE_DIA });
   registrarNoHistorico({
     tipo: "cardio",
@@ -810,6 +715,27 @@ function renderHistorico() {
         header.querySelector(".chevron-icon").classList.toggle("rotate-180");
       });
     }
+
+    // Adicionar botão de deletar
+    const deleteBtn = document.createElement("button");
+    deleteBtn.className = "absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center text-muted hover:text-clay hover:bg-clay/10 transition-all";
+    deleteBtn.innerHTML = '<i class="fa-solid fa-trash-can text-xs"></i>';
+    deleteBtn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const confirmed = await showConfirmDialog(
+        "Deletar registro?",
+        `Tem certeza que deseja remover "${item.nome}" do histórico?`,
+        "Deletar",
+        "Cancelar"
+      );
+      if (confirmed) {
+        p.historicoLog = p.historicoLog.filter(x => x.id !== item.id);
+        renderHistorico();
+        showToast("Registro removido!");
+      }
+    });
+    card.style.position = "relative";
+    card.appendChild(deleteBtn);
 
     list.appendChild(card);
   });
