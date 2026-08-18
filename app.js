@@ -386,6 +386,15 @@ document.getElementById("editorDeleteBtn").addEventListener("click", () => {
 let highlighter = null;
 
 function startExecution(templateId) {
+  const t = TEMPLATES.find(x => x.id === templateId);
+  // guarda contra ficha sem exercícios (ex: recém-criada e ainda não configurada):
+  // sem essa checagem, currentExercise() volta um objeto vazio e a renderização
+  // quebra no meio (era isso que deixava a tela em branco no lugar do menu).
+  if (!t || !t.exercicios || t.exercicios.length === 0) {
+    showToast("Adicione exercícios a esta ficha antes de iniciar");
+    if (t) openEditor(t.id);
+    return;
+  }
   state.execucao = {
     templateId,
     exercicioIndex: 0,
@@ -402,7 +411,10 @@ function currentTemplate() {
 }
 function currentExercise() {
   const exId = currentTemplate().exercicios[state.execucao.exercicioIndex];
-  return { id: exId, ...EXERCISES[exId] };
+  const dados = EXERCISES[exId];
+  // fallback defensivo: se o id não existir no catálogo (exercício removido/renomeado),
+  // devolve um objeto completo em vez de um objeto pela metade que quebra o resto do render
+  return { id: exId, nome: "Exercício não encontrado", grupo: null, primary: [], secondary: [], imagem: "", ...dados };
 }
 
 function renderExecucao() {
@@ -439,10 +451,12 @@ function renderMuscleModel(ex) {
   if (highlighter) highlighter.destroy();
   container.innerHTML = "";
 
-  const hasBack = ex.primary.some(m => backMuscles.includes(m));
+  const primary = ex.primary || [];
+  const secondary = ex.secondary || [];
+  const hasBack = primary.some(m => backMuscles.includes(m));
   const data = [
-    { name: ex.nome + " (principal)", muscles: ex.primary, frequency: 2 },
-    { name: ex.nome + " (secundário)", muscles: ex.secondary, frequency: 1 }
+    { name: ex.nome + " (principal)", muscles: primary, frequency: 2 },
+    { name: ex.nome + " (secundário)", muscles: secondary, frequency: 1 }
   ];
 
   highlighter = createBodyHighlighter({
