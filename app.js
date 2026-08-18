@@ -2,31 +2,6 @@ import createBodyHighlighter from 'https://esm.sh/body-highlighter';
 import { EXERCISES, GROUPS } from './exercises.js';
 
 /* =========================================================
-   ALTURA REAL DO VIEWPORT (mobile)
-   O 100dvh sozinho fica "atrasado" quando a barra de endereço do
-   Safari/Chrome mobile recolhe/expande, deixando uma faixa em
-   branco entre o rodapé fixo (ex: botão "Concluir Treino") e a
-   borda inferior real da tela. Aqui recalculamos a altura de
-   verdade (via visualViewport, quando disponível) e gravamos
-   numa variável CSS que o container usa no lugar de 100dvh.
-   ========================================================= */
-function setAppHeight() {
-  const h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
-  document.documentElement.style.setProperty("--app-height", `${h}px`);
-}
-setAppHeight();
-window.addEventListener("resize", setAppHeight);
-window.addEventListener("orientationchange", setAppHeight);
-window.addEventListener("load", setAppHeight);
-// no primeiro carregamento o Safari às vezes ainda não "assentou" a barra de
-// endereço/toolbar quando o script roda — recalcula de novo logo em seguida
-setTimeout(setAppHeight, 150);
-setTimeout(setAppHeight, 500);
-if (window.visualViewport) {
-  window.visualViewport.addEventListener("resize", setAppHeight);
-}
-
-/* =========================================================
    DADOS FAKE — isso tudo depois vira leitura/escrita no Firestore
    (o catálogo de exercícios agora mora em exercises.js)
    ========================================================= */

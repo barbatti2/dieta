@@ -32,9 +32,21 @@
     }
   </script>
   <style>
-    :root { --app-height: 100dvh; }
     html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
-    .app-container { height: var(--app-height); }
+    /* No celular, o app fica fixo colado nas 4 bordas da tela — sem depender
+       de nenhum cálculo de altura (100dvh, JS, etc.), que é o que vinha
+       causando espaço em branco sobrando embaixo/em cima em alguns aparelhos.
+       No desktop (>=640px) mantém a moldura de celular centralizada. */
+    @media (max-width: 639.98px) {
+      .app-container {
+        position: fixed !important;
+        inset: 0 !important;
+        height: auto !important;
+        max-width: none !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+      }
+    }
     ::-webkit-scrollbar { width: 0; height: 0; display: none; }
     * { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
     body { user-select: none; }
