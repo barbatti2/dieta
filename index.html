@@ -33,6 +33,20 @@
   </script>
   <style>
     html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+    /* No celular, o app fica fixo colado nas 4 bordas da tela — sem depender
+       de nenhum cálculo de altura (100dvh, JS, etc.), que é o que vinha
+       causando espaço em branco sobrando embaixo/em cima em alguns aparelhos.
+       No desktop (>=640px) mantém a moldura de celular centralizada. */
+    @media (max-width: 639.98px) {
+      .app-container {
+        position: fixed !important;
+        inset: 0 !important;
+        height: auto !important;
+        max-width: none !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+      }
+    }
     ::-webkit-scrollbar { width: 0; height: 0; display: none; }
     * { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
     body { user-select: none; }
@@ -51,7 +65,7 @@
 </head>
 <body class="bg-paper sm:bg-[#EDE8DF] text-ink font-sans antialiased min-h-screen flex items-center justify-center sm:py-6">
 
-  <div class="w-full max-w-[375px] mx-auto h-[100dvh] sm:h-[780px] bg-paper relative flex flex-col sm:rounded-[2.5rem] sm:shadow-2xl sm:shadow-black/10 overflow-hidden">
+  <div class="app-container w-full max-w-[375px] mx-auto sm:h-[780px] bg-paper relative flex flex-col sm:rounded-[2.5rem] sm:shadow-2xl sm:shadow-black/10 overflow-hidden">
 
     <!-- toast de confirmação -->
     <div id="toast" class="toast bg-ink text-white text-xs font-bold px-4 py-2.5 rounded-full shadow-lg"></div>
@@ -177,7 +191,7 @@
             <p class="text-[10px] font-bold uppercase tracking-widest leading-tight"><span class="text-clay">Foco</span> <span class="text-white">Muscular</span></p>
             <p class="text-sm font-bold text-white truncate" id="execFocus">Quadríceps, Glúteo</p>
           </div>
-          <div class="w-20 h-20 rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0 bg-card border border-hairline" id="execModel"></div>
+          <div class="w-28 h-28 rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0 bg-card border border-hairline" id="execModel"></div>
         </section>
 
         <section class="grid grid-cols-2 gap-3">
@@ -200,16 +214,13 @@
         </section>
       </main>
 
-      <footer class="flex-shrink-0 bg-white/80 backdrop-blur-xl border-t border-hairline px-6 pt-4 pb-8 z-50">
-        <div class="w-full flex rounded-2xl overflow-hidden shadow-lg shadow-clay/20">
-          <button id="prevExBtn" class="flex-1 bg-[#E4DFD3] text-muted font-bold uppercase tracking-wide py-4 flex items-center justify-center gap-2 text-sm transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none">
-            <i class="fa-solid fa-chevron-left text-xs"></i> Anterior
-          </button>
-          <button id="mainExecBtn" class="flex-1 bg-clay text-white font-bold uppercase tracking-wide py-4 hover:bg-[#b33e27] transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-sm">
-            <span id="mainExecBtnLabel">Próximo</span>
-            <i id="mainExecBtnIcon" class="fa-solid fa-chevron-right text-xs"></i>
-          </button>
-        </div>
+      <footer class="flex-shrink-0 bg-white/80 backdrop-blur-xl border-t border-hairline px-6 pt-4 pb-8 flex items-center gap-3 z-50">
+        <button id="prevExBtn" class="flex-1 bg-card border border-hairline text-ink font-bold uppercase tracking-wide py-4 rounded-2xl hover:bg-paper transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-sm disabled:opacity-40 disabled:pointer-events-none">
+          <i class="fa-solid fa-chevron-left text-xs"></i> Anterior
+        </button>
+        <button id="mainExecBtn" class="flex-1 bg-clay text-white font-bold uppercase tracking-wide py-4 rounded-2xl hover:bg-[#b33e27] transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-sm shadow-lg shadow-clay/20">
+          <span id="mainExecBtnLabel">Próximo</span> <i id="mainExecBtnIcon" class="fa-solid fa-chevron-right text-xs"></i>
+        </button>
       </footer>
     </section>
 

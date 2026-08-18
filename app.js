@@ -37,8 +37,7 @@ const PROFILES = {
     diasTreinados: [2, 4, 6, 9, 11, 12, 13, 15, 16],
     cardioLog: [],
     historicoLog: [],
-    concluidosHoje: [],
-    emAndamento: null
+    concluidosHoje: []
   },
   parceira: {
     nome: "Sua parceira",
@@ -46,8 +45,7 @@ const PROFILES = {
     diasTreinados: [3, 5, 8, 10, 13, 14, 16],
     cardioLog: [],
     historicoLog: [],
-    concluidosHoje: [],
-    emAndamento: null
+    concluidosHoje: []
   }
 };
 
@@ -62,6 +60,7 @@ let state = {
   calMonth: 7, // agosto = index 7 (0-based)
   calYear: 2026,
   calSelectedDay: null,
+  hojeTemplateId: null, // qual ficha (A/B/C) foi escolhida como treino de hoje
   execucao: null,
   cardioTipo: "esteira",
   cardioIntensidade: "leve"
@@ -155,57 +154,91 @@ function renderHoje() {
 
 function renderTodayWorkout() {
   const p = currentProfile();
-  const hoje = new Date().getDay(); // 0 = domingo ... 6 = sábado (dia real do dispositivo)
   const container = document.getElementById("todayWorkoutCard");
-  const treinosHoje = TEMPLATES.filter(t => (t.dias || []).includes(hoje));
 
-  if (treinosHoje.length === 0) {
+  // ainda não escolheu qual ficha é o treino de hoje: mostra o seletor
+  if (!state.hojeTemplateId) {
     container.innerHTML = `
-      <div class="bg-card border border-dashed border-hairline rounded-2xl p-4 text-center">
-        <p class="text-sm text-muted">Nenhum treino agendado para hoje (${WEEKDAY_FULL[hoje]}).</p>
-        <button id="goScheduleBtn" class="mt-3 text-xs font-bold text-clay uppercase tracking-widest">Agendar na aba Treinos →</button>
+      <div class="bg-card border border-hairline rounded-2xl p-4 shadow-sm">
+        <p class="text-[10px] font-bold text-clay uppercase tracking-[0.2em] mb-3">Qual treino de hoje?</p>
+        <div class="flex flex-col gap-2" id="hojeTemplatePicker"></div>
       </div>
     `;
-    document.getElementById("goScheduleBtn").addEventListener("click", () => showScreen("treinos"));
+    const picker = document.getElementById("hojeTemplatePicker");
+    TEMPLATES.forEach(t => {
+      const btn = document.createElement("button");
+      btn.className = "today-pick-btn w-full flex items-center gap-3 bg-paper border border-hairline rounded-xl p-3 text-left hover:border-clay/40 transition-all active:scale-[0.98]";
+      btn.innerHTML = `
+        <div class="w-9 h-9 bg-card rounded-lg flex items-center justify-center text-clay flex-shrink-0"><i class="fa-solid fa-dumbbell text-xs"></i></div>
+        <div class="min-w-0">
+          <span class="text-[9px] font-bold text-clay uppercase tracking-[0.15em]">${t.ficha}</span>
+          <h3 class="font-serif text-sm font-medium truncate">${t.nome}</h3>
+        </div>
+      `;
+      btn.addEventListener("click", () => {
+        state.hojeTemplateId = t.id;
+        renderTodayWorkout();
+      });
+      picker.appendChild(btn);
+    });
     return;
   }
 
-  container.innerHTML = treinosHoje.map(t => {
-    const concluido = p.concluidosHoje.includes(t.id);
-    if (concluido) {
-      return `
-        <div class="bg-emerald/5 border border-emerald/30 rounded-2xl p-4 flex items-center gap-3 mb-3 last:mb-0">
-          <div class="w-9 h-9 bg-emerald rounded-full flex items-center justify-center text-white flex-shrink-0">
-            <i class="fa-solid fa-check text-xs"></i>
-          </div>
-          <div class="min-w-0">
-            <span class="text-[10px] font-bold text-emerald uppercase tracking-[0.15em]">${t.ficha} · Concluído</span>
-            <h3 class="font-serif text-base font-medium truncate">${t.nome}</h3>
-          </div>
-        </div>
-      `;
-    }
-    const emAndamento = p.emAndamento && p.emAndamento.templateId === t.id;
-    return `
-      <div class="bg-card border border-hairline rounded-2xl p-4 shadow-sm mb-3 last:mb-0">
-        <div class="flex items-center justify-between mb-3">
-          <div>
-            <span class="text-[10px] font-bold text-clay uppercase tracking-[0.2em]">${t.ficha}</span>
-            <h3 class="font-serif text-lg font-medium">${t.nome}</h3>
-          </div>
-          <div class="w-10 h-10 bg-paper rounded-xl flex items-center justify-center text-clay flex-shrink-0">
-            <i class="fa-solid fa-dumbbell"></i>
-          </div>
-        </div>
-        <button class="start-today-btn w-full ${emAndamento ? "bg-clay" : "bg-ink"} text-white font-medium py-2.5 rounded-xl text-sm active:scale-[0.98] transition-all flex items-center justify-center gap-2" data-template-id="${t.id}">
-          ${emAndamento ? '<i class="fa-solid fa-rotate-right text-xs"></i> Treino em Andamento' : "Iniciar Treino"}
-        </button>
-      </div>
-    `;
-  }).join("");
+  const t = TEMPLATES.find(x => x.id === state.hojeTemplateId);
 
-  container.querySelectorAll(".start-today-btn").forEach(btn => {
-    btn.addEventListener("click", () => startExecution(btn.dataset.templateId));
+  // a ficha escolhida foi excluída no editor: volta pro seletor
+  if (!t) {
+    state.hojeTemplateId = null;
+    renderTodayWorkout();
+    return;
+  }
+
+  const concluido = p.concluidosHoje.includes(t.id);
+  const emAndamento = state.execucao && state.execucao.templateId === t.id;
+
+  if (concluido) {
+    container.innerHTML = `
+      <div class="bg-emerald/5 border border-emerald/30 rounded-2xl p-4 flex items-center gap-3">
+        <div class="w-9 h-9 bg-emerald rounded-full flex items-center justify-center text-white flex-shrink-0">
+          <i class="fa-solid fa-check text-xs"></i>
+        </div>
+        <div class="min-w-0 flex-1">
+          <span class="text-[10px] font-bold text-emerald uppercase tracking-[0.15em]">${t.ficha} · Concluído</span>
+          <h3 class="font-serif text-base font-medium truncate">${t.nome}</h3>
+        </div>
+      </div>
+      <button id="trocarTreinoBtn" class="mt-3 text-xs font-bold text-clay uppercase tracking-widest">Escolher outro treino</button>
+    `;
+    document.getElementById("trocarTreinoBtn").addEventListener("click", () => {
+      state.hojeTemplateId = null;
+      renderTodayWorkout();
+    });
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="bg-card border border-hairline rounded-2xl p-4 shadow-sm">
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <span class="text-[10px] font-bold text-clay uppercase tracking-[0.2em]">${t.ficha}</span>
+          <h3 class="font-serif text-lg font-medium">${t.nome}</h3>
+          ${emAndamento ? `<p class="text-[11px] text-muted mt-0.5">Exercício ${state.execucao.exercicioIndex + 1} de ${t.exercicios.length}</p>` : ""}
+        </div>
+        <div class="w-10 h-10 bg-paper rounded-xl flex items-center justify-center text-clay flex-shrink-0">
+          <i class="fa-solid fa-dumbbell"></i>
+        </div>
+      </div>
+      <button class="start-today-btn w-full bg-ink text-white font-medium py-2.5 rounded-xl text-sm active:scale-[0.98] transition-all" data-template-id="${t.id}">
+        ${emAndamento ? "Continuar Treino" : "Iniciar Treino"}
+      </button>
+      <button id="trocarTreinoBtn" class="mt-2 w-full text-xs font-bold text-muted uppercase tracking-widest py-1">Escolher outro treino</button>
+    </div>
+  `;
+
+  container.querySelector(".start-today-btn").addEventListener("click", () => startExecution(t.id));
+  document.getElementById("trocarTreinoBtn").addEventListener("click", () => {
+    state.hojeTemplateId = null;
+    renderTodayWorkout();
   });
 }
 
@@ -255,7 +288,7 @@ function renderTemplateList() {
       </div>
     `;
     card.querySelectorAll(".template-open").forEach(el => {
-      el.addEventListener("click", () => startExecution(t.id));
+      el.addEventListener("click", () => openEditor(t.id));
     });
     card.querySelector(".template-edit").addEventListener("click", (e) => {
       e.stopPropagation();
@@ -389,67 +422,20 @@ document.getElementById("editorDeleteBtn").addEventListener("click", () => {
 let highlighter = null;
 
 function startExecution(templateId) {
-  const p = currentProfile();
-  const salvo = p.emAndamento;
-
-  // se já existe um treino em andamento pra essa mesma ficha, retoma de onde parou
-  state.execucao = (salvo && salvo.templateId === templateId)
-    ? { ...salvo, log: [...salvo.log] }
-    : {
-        templateId,
-        exercicioIndex: 0,
-        weight: 40,
-        reps: 10,
-        log: [] // registra peso/reps de cada exercício conforme vai concluindo
-      };
-
+  state.hojeTemplateId = templateId;
+  // se já tem um treino dessa mesma ficha em andamento, retoma de onde parou;
+  // só começa do zero se for uma ficha diferente ou não houver nada rolando
+  if (!state.execucao || state.execucao.templateId !== templateId) {
+    state.execucao = {
+      templateId,
+      exercicioIndex: 0,
+      weight: 40,
+      reps: 10,
+      log: [] // registra peso/reps de cada exercício conforme vai concluindo
+    };
+  }
   showScreen("execucao");
   renderExecucao();
-}
-
-/* =========================================================
-   PERSISTÊNCIA DO TREINO EM ANDAMENTO
-   ========================================================= */
-
-const ANDAMENTO_KEY = "treinoAndamento";
-
-function salvarAndamento() {
-  const ec = state.execucao;
-  if (!ec) return;
-  const p = currentProfile();
-  p.emAndamento = { ...ec, log: [...ec.log] };
-  persistirAndamento();
-}
-
-function limparAndamento() {
-  const p = currentProfile();
-  p.emAndamento = null;
-  persistirAndamento();
-}
-
-function persistirAndamento() {
-  try {
-    const dados = {};
-    Object.keys(PROFILES).forEach(key => {
-      if (PROFILES[key].emAndamento) dados[key] = PROFILES[key].emAndamento;
-    });
-    localStorage.setItem(ANDAMENTO_KEY, JSON.stringify(dados));
-  } catch (e) {
-    // localStorage indisponível — segue só em memória
-  }
-}
-
-function carregarAndamento() {
-  try {
-    const raw = localStorage.getItem(ANDAMENTO_KEY);
-    if (!raw) return;
-    const dados = JSON.parse(raw);
-    Object.keys(dados).forEach(key => {
-      if (PROFILES[key]) PROFILES[key].emAndamento = dados[key];
-    });
-  } catch (e) {
-    // ignora dado corrompido
-  }
 }
 
 function currentTemplate() {
@@ -483,12 +469,12 @@ function renderExecucao() {
   document.getElementById("weightValue").textContent = ec.weight;
   document.getElementById("repsValue").textContent = ec.reps;
 
-  document.getElementById("mainExecBtnLabel").textContent = isLast ? "Concluir" : "Próximo";
-  document.getElementById("mainExecBtnIcon").className = isLast ? "fa-solid fa-check text-xs" : "fa-solid fa-chevron-right text-xs";
+  document.getElementById("mainExecBtnLabel").textContent = isLast ? "Concluir Treino" : "Próximo";
+  const mainIcon = document.getElementById("mainExecBtnIcon");
+  mainIcon.className = isLast ? "fa-solid fa-check text-xs" : "fa-solid fa-chevron-right text-xs";
   document.getElementById("prevExBtn").disabled = ec.exercicioIndex === 0;
 
   renderMuscleModel(ex);
-  salvarAndamento();
 }
 
 function renderMuscleModel(ex) {
@@ -508,7 +494,7 @@ function renderMuscleModel(ex) {
     type: hasBack ? "posterior" : "anterior",
     bodyColor: "#D8D3C8",
     highlightedColors: ["#E7B8A9", "#C9482F"],
-    style: { width: "24px" }
+    style: { width: "100%", height: "100%" }
   });
 
   // a lib gera um SVG com proporção retangular (corpo inteiro); sem isso,
@@ -525,8 +511,26 @@ function renderMuscleModel(ex) {
     // "zoom" na região destacada: em vez de mostrar o corpo inteiro minúsculo,
     // recorta o viewBox pra região que está colorida (o músculo trabalhado),
     // deixando ela bem maior e mais visível dentro do quadradinho.
+    //
+    // OBS: a lib pinta os músculos via style.fill (inline), não via atributo
+    // fill — por isso não dá pra usar seletor [fill="..."]. Em vez de comparar
+    // strings de cor (que o navegador pode normalizar pra rgb()), comparamos
+    // a cor computada de cada forma com a cor computada do "bodyColor" (cor
+    // neutra dos músculos não trabalhados): tudo que for diferente disso é
+    // músculo destacado.
     try {
-      const highlighted = svg.querySelectorAll('[fill="#E7B8A9"], [fill="#C9482F"]');
+      const probe = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      probe.style.fill = "#D8D3C8"; // precisa bater com o bodyColor passado acima
+      svg.appendChild(probe);
+      const neutralFill = getComputedStyle(probe).fill;
+      probe.remove();
+
+      const shapes = svg.querySelectorAll("polygon, path, circle, ellipse, rect");
+      const highlighted = Array.from(shapes).filter(el => {
+        const fill = getComputedStyle(el).fill;
+        return fill && fill !== "none" && fill !== neutralFill;
+      });
+
       if (highlighted.length > 0) {
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
         highlighted.forEach(el => {
@@ -538,12 +542,13 @@ function renderMuscleModel(ex) {
         });
         const bw = maxX - minX;
         const bh = maxY - minY;
-        const padX = bw * 0.5;
-        const padY = bh * 0.3;
+        // padding maior = zoom mais suave; menor = zoom mais forte
+        const padX = bw * 0.75;
+        const padY = bh * 0.55;
         svg.setAttribute("viewBox", `${minX - padX} ${minY - padY} ${bw + padX * 2} ${bh + padY * 2}`);
       }
     } catch (e) {
-      // se o navegador não suportar getBBox por algum motivo, mantém o corpo inteiro
+      // se o navegador não suportar getBBox/getComputedStyle por algum motivo, mantém o corpo inteiro
     }
   });
 }
@@ -563,7 +568,6 @@ document.querySelectorAll(".stepper").forEach(btn => {
     if (target === "reps") ec.reps = Math.max(0, ec.reps + dir);
     document.getElementById("weightValue").textContent = ec.weight;
     document.getElementById("repsValue").textContent = ec.reps;
-    salvarAndamento();
   });
 });
 
@@ -603,7 +607,6 @@ document.getElementById("mainExecBtn").addEventListener("click", () => {
   });
   marcarDiaTreinado();
   state.execucao = null;
-  limparAndamento();
   renderHoje();
   renderCalendario();
   renderHistorico();
@@ -611,7 +614,10 @@ document.getElementById("mainExecBtn").addEventListener("click", () => {
   showScreen("hoje");
 });
 
-document.getElementById("execCloseBtn").addEventListener("click", () => showScreen("treinos"));
+document.getElementById("execCloseBtn").addEventListener("click", () => {
+  renderTodayWorkout();
+  showScreen("hoje");
+});
 
 /* =========================================================
    TELA "CARDIO"
@@ -821,5 +827,4 @@ function renderAll() {
   renderCalendario();
 }
 
-carregarAndamento();
 renderAll();
