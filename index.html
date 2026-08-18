@@ -46,11 +46,13 @@
     .profile-btn.active { opacity: 1; filter: none; box-shadow: 0 0 0 2px #C9482F, 0 0 0 4px #fff; }
     .toast { position: absolute; left: 50%; bottom: 96px; transform: translateX(-50%) translateY(8px); opacity: 0; pointer-events: none; transition: all .25s ease; z-index: 60; }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .weekday-btn { opacity: .5; }
+    .weekday-btn.active { opacity: 1; background: #C9482F; color: #fff; border-color: #C9482F; }
   </style>
 </head>
-<body class="bg-[#EDE8DF] text-ink font-sans antialiased min-h-screen flex items-center justify-center py-6">
+<body class="bg-paper sm:bg-[#EDE8DF] text-ink font-sans antialiased min-h-screen flex items-center justify-center sm:py-6">
 
-  <div class="w-full max-w-[375px] mx-auto min-h-[calc(100vh-48px)] sm:min-h-0 sm:h-[780px] bg-paper relative flex flex-col sm:rounded-[2.5rem] sm:shadow-2xl sm:shadow-black/10 overflow-hidden">
+  <div class="w-full max-w-[375px] mx-auto h-screen sm:h-[780px] bg-paper relative flex flex-col sm:rounded-[2.5rem] sm:shadow-2xl sm:shadow-black/10 overflow-hidden">
 
     <!-- toast de confirmação -->
     <div id="toast" class="toast bg-ink text-white text-xs font-bold px-4 py-2.5 rounded-full shadow-lg"></div>
@@ -73,6 +75,11 @@
       </header>
 
       <main class="flex-1 min-h-0 overflow-y-auto px-6 pb-8 space-y-4">
+        <section class="space-y-3" id="todayWorkoutSection">
+          <h2 class="text-[10px] font-bold text-muted uppercase tracking-[0.2em] px-1">Treino de Hoje</h2>
+          <div id="todayWorkoutCard"></div>
+        </section>
+
         <section class="space-y-3">
           <h2 class="text-[10px] font-bold text-muted uppercase tracking-[0.2em] px-1">Últimos 7 dias</h2>
           <div class="bg-card border border-hairline rounded-2xl p-4 shadow-sm flex justify-between items-center" id="weekStrip"></div>
@@ -80,9 +87,12 @@
 
         <section class="bg-clay text-white rounded-2xl px-5 py-4 shadow-sm flex items-center justify-center gap-3">
           <i class="fa-solid fa-fire text-base opacity-80"></i>
-          <div class="flex items-baseline gap-1.5">
-            <span class="font-serif text-2xl font-medium leading-none" id="streakCount">12</span>
-            <span class="text-xs font-medium opacity-80">dias seguidos</span>
+          <div class="text-center">
+            <p class="text-[9px] uppercase tracking-[0.15em] opacity-70 mb-0.5">Sequência de treinos</p>
+            <div class="flex items-baseline gap-1.5 justify-center">
+              <span class="font-serif text-2xl font-medium leading-none" id="streakCount">12</span>
+              <span class="text-xs font-medium opacity-80">dias seguidos treinando</span>
+            </div>
           </div>
         </section>
       </main>
@@ -125,7 +135,10 @@
       </header>
 
       <main class="flex-1 min-h-0 overflow-y-auto px-6 pb-6 space-y-2">
-        <p class="text-[10px] font-bold text-muted uppercase tracking-[0.2em] px-2 pt-2 pb-1">Toque para incluir ou remover</p>
+        <p class="text-[10px] font-bold text-muted uppercase tracking-[0.2em] px-2 pt-2 pb-1">Repetir em quais dias?</p>
+        <div id="editorWeekdays" class="flex gap-1.5 px-1 pb-3"></div>
+
+        <p class="text-[10px] font-bold text-muted uppercase tracking-[0.2em] px-2 pb-1">Toque para incluir ou remover exercícios</p>
         <div id="editorExerciseList" class="space-y-2"></div>
       </main>
 
@@ -160,10 +173,10 @@
             <img id="execImage" src="" alt="" class="w-full h-full object-cover">
           </div>
           <div class="flex items-center gap-3 w-full border-t border-hairline pt-3">
-            <div class="w-11 h-11 flex items-center justify-center flex-shrink-0" id="execModel"></div>
-            <div>
+            <div class="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0 bg-paper" id="execModel"></div>
+            <div class="min-w-0">
               <p class="text-[10px] font-bold text-muted uppercase tracking-widest leading-tight">Foco muscular</p>
-              <p class="text-sm font-bold text-ink" id="execFocus">Quadríceps, Glúteo</p>
+              <p class="text-sm font-bold text-ink truncate" id="execFocus">Quadríceps, Glúteo</p>
             </div>
           </div>
         </section>
@@ -188,19 +201,14 @@
         </section>
       </main>
 
-      <footer class="flex-shrink-0 bg-white/80 backdrop-blur-xl border-t border-hairline px-6 pt-4 pb-8 flex flex-col gap-3 z-50">
-        <button id="finishWorkoutBtn" class="w-full bg-clay text-white font-medium py-3 rounded-2xl hover:bg-[#b33e27] transition-all active:scale-[0.98] shadow-lg shadow-clay/20 flex items-center justify-center gap-2" style="display:none;">
+      <footer class="flex-shrink-0 bg-white/80 backdrop-blur-xl border-t border-hairline px-6 pt-4 pb-8 flex flex-col gap-2 z-50">
+        <button id="mainExecBtn" class="w-full bg-ink text-white font-medium py-3.5 rounded-2xl hover:bg-black transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-sm">
           <i class="fa-solid fa-check"></i>
-          Concluir Treino
+          <span id="mainExecBtnLabel">Concluir exercício</span>
         </button>
-        <div class="flex items-center justify-between px-2">
-          <button id="prevExBtn" class="text-xs font-bold text-muted uppercase tracking-widest hover:text-ink transition-colors flex items-center gap-2">
-            <i class="fa-solid fa-chevron-left text-[9px]"></i> Anterior
-          </button>
-          <button id="nextExBtn" class="text-xs font-bold text-muted uppercase tracking-widest hover:text-ink transition-colors flex items-center gap-2">
-            Próximo <i class="fa-solid fa-chevron-right text-[9px]"></i>
-          </button>
-        </div>
+        <button id="prevExBtn" class="text-xs font-bold text-muted uppercase tracking-widest hover:text-ink transition-colors flex items-center justify-center gap-2 py-1">
+          <i class="fa-solid fa-chevron-left text-[9px]"></i> Exercício anterior
+        </button>
       </footer>
     </section>
 
