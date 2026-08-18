@@ -37,7 +37,8 @@ const PROFILES = {
     diasTreinados: [2, 4, 6, 9, 11, 12, 13, 15, 16],
     cardioLog: [],
     historicoLog: [],
-    concluidosHoje: []
+    concluidosHoje: [],
+    emAndamento: null
   },
   parceira: {
     nome: "Sua parceira",
@@ -45,7 +46,8 @@ const PROFILES = {
     diasTreinados: [3, 5, 8, 10, 13, 14, 16],
     cardioLog: [],
     historicoLog: [],
-    concluidosHoje: []
+    concluidosHoje: [],
+    emAndamento: null
   }
 };
 
@@ -183,6 +185,7 @@ function renderTodayWorkout() {
         </div>
       `;
     }
+    const emAndamento = p.emAndamento && p.emAndamento.templateId === t.id;
     return `
       <div class="bg-card border border-hairline rounded-2xl p-4 shadow-sm mb-3 last:mb-0">
         <div class="flex items-center justify-between mb-3">
@@ -194,8 +197,8 @@ function renderTodayWorkout() {
             <i class="fa-solid fa-dumbbell"></i>
           </div>
         </div>
-        <button class="start-today-btn w-full bg-ink text-white font-medium py-2.5 rounded-xl text-sm active:scale-[0.98] transition-all" data-template-id="${t.id}">
-          Iniciar Treino
+        <button class="start-today-btn w-full ${emAndamento ? "bg-clay" : "bg-ink"} text-white font-medium py-2.5 rounded-xl text-sm active:scale-[0.98] transition-all flex items-center justify-center gap-2" data-template-id="${t.id}">
+          ${emAndamento ? '<i class="fa-solid fa-rotate-right text-xs"></i> Treino em Andamento' : "Iniciar Treino"}
         </button>
       </div>
     `;
@@ -386,15 +389,67 @@ document.getElementById("editorDeleteBtn").addEventListener("click", () => {
 let highlighter = null;
 
 function startExecution(templateId) {
-  state.execucao = {
-    templateId,
-    exercicioIndex: 0,
-    weight: 40,
-    reps: 10,
-    log: [] // registra peso/reps de cada exercício conforme vai concluindo
-  };
+  const p = currentProfile();
+  const salvo = p.emAndamento;
+
+  // se já existe um treino em andamento pra essa mesma ficha, retoma de onde parou
+  state.execucao = (salvo && salvo.templateId === templateId)
+    ? { ...salvo, log: [...salvo.log] }
+    : {
+        templateId,
+        exercicioIndex: 0,
+        weight: 40,
+        reps: 10,
+        log: [] // registra peso/reps de cada exercício conforme vai concluindo
+      };
+
   showScreen("execucao");
   renderExecucao();
+}
+
+/* =========================================================
+   PERSISTÊNCIA DO TREINO EM ANDAMENTO
+   ========================================================= */
+
+const ANDAMENTO_KEY = "treinoAndamento";
+
+function salvarAndamento() {
+  const ec = state.execucao;
+  if (!ec) return;
+  const p = currentProfile();
+  p.emAndamento = { ...ec, log: [...ec.log] };
+  persistirAndamento();
+}
+
+function limparAndamento() {
+  const p = currentProfile();
+  p.emAndamento = null;
+  persistirAndamento();
+}
+
+function persistirAndamento() {
+  try {
+    const dados = {};
+    Object.keys(PROFILES).forEach(key => {
+      if (PROFILES[key].emAndamento) dados[key] = PROFILES[key].emAndamento;
+    });
+    localStorage.setItem(ANDAMENTO_KEY, JSON.stringify(dados));
+  } catch (e) {
+    // localStorage indisponível — segue só em memória
+  }
+}
+
+function carregarAndamento() {
+  try {
+    const raw = localStorage.getItem(ANDAMENTO_KEY);
+    if (!raw) return;
+    const dados = JSON.parse(raw);
+    Object.keys(dados).forEach(key => {
+      if (PROFILES[key]) PROFILES[key].emAndamento = dados[key];
+    });
+  } catch (e) {
+    // ignora dado corrompido
+  }
 }
 
 function currentTemplate() {
@@ -428,10 +483,12 @@ function renderExecucao() {
   document.getElementById("weightValue").textContent = ec.weight;
   document.getElementById("repsValue").textContent = ec.reps;
 
-  document.getElementById("mainExecBtnLabel").textContent = isLast ? "Concluir Treino" : `Concluir ${ex.nome}`;
-  document.getElementById("prevExBtn").style.visibility = ec.exercicioIndex === 0 ? "hidden" : "visible";
+  document.getElementById("mainExecBtnLabel").textContent = isLast ? "Concluir" : "Próximo";
+  document.getElementById("mainExecBtnIcon").className = isLast ? "fa-solid fa-check text-xs" : "fa-solid fa-chevron-right text-xs";
+  document.getElementById("prevExBtn").disabled = ec.exercicioIndex === 0;
 
   renderMuscleModel(ex);
+  salvarAndamento();
 }
 
 function renderMuscleModel(ex) {
@@ -506,6 +563,7 @@ document.querySelectorAll(".stepper").forEach(btn => {
     if (target === "reps") ec.reps = Math.max(0, ec.reps + dir);
     document.getElementById("weightValue").textContent = ec.weight;
     document.getElementById("repsValue").textContent = ec.reps;
+    salvarAndamento();
   });
 });
 
@@ -545,6 +603,7 @@ document.getElementById("mainExecBtn").addEventListener("click", () => {
   });
   marcarDiaTreinado();
   state.execucao = null;
+  limparAndamento();
   renderHoje();
   renderCalendario();
   renderHistorico();
@@ -762,4 +821,5 @@ function renderAll() {
   renderCalendario();
 }
 
+carregarAndamento();
 renderAll();
