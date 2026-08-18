@@ -2,6 +2,26 @@ import createBodyHighlighter from 'https://esm.sh/body-highlighter';
 import { EXERCISES, GROUPS } from './exercises.js';
 
 /* =========================================================
+   ALTURA REAL DO VIEWPORT (mobile)
+   O 100dvh sozinho fica "atrasado" quando a barra de endereço do
+   Safari/Chrome mobile recolhe/expande, deixando uma faixa em
+   branco entre o rodapé fixo (ex: botão "Concluir Treino") e a
+   borda inferior real da tela. Aqui recalculamos a altura de
+   verdade (via visualViewport, quando disponível) e gravamos
+   numa variável CSS que o container usa no lugar de 100dvh.
+   ========================================================= */
+function setAppHeight() {
+  const h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+  document.documentElement.style.setProperty("--app-height", `${h}px`);
+}
+setAppHeight();
+window.addEventListener("resize", setAppHeight);
+window.addEventListener("orientationchange", setAppHeight);
+if (window.visualViewport) {
+  window.visualViewport.addEventListener("resize", setAppHeight);
+}
+
+/* =========================================================
    DADOS FAKE — isso tudo depois vira leitura/escrita no Firestore
    (o catálogo de exercícios agora mora em exercises.js)
    ========================================================= */
@@ -451,7 +471,7 @@ function renderMuscleModel(ex) {
     type: hasBack ? "posterior" : "anterior",
     bodyColor: "#D8D3C8",
     highlightedColors: ["#E7B8A9", "#C9482F"],
-    style: { width: "24px" }
+    style: { width: "100%", height: "100%" }
   });
 
   // a lib gera um SVG com proporção retangular (corpo inteiro); sem isso,
@@ -468,8 +488,26 @@ function renderMuscleModel(ex) {
     // "zoom" na região destacada: em vez de mostrar o corpo inteiro minúsculo,
     // recorta o viewBox pra região que está colorida (o músculo trabalhado),
     // deixando ela bem maior e mais visível dentro do quadradinho.
+    //
+    // OBS: a lib pinta os músculos via style.fill (inline), não via atributo
+    // fill — por isso não dá pra usar seletor [fill="..."]. Em vez de comparar
+    // strings de cor (que o navegador pode normalizar pra rgb()), comparamos
+    // a cor computada de cada forma com a cor computada do "bodyColor" (cor
+    // neutra dos músculos não trabalhados): tudo que for diferente disso é
+    // músculo destacado.
     try {
-      const highlighted = svg.querySelectorAll('[fill="#E7B8A9"], [fill="#C9482F"]');
+      const probe = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      probe.style.fill = "#D8D3C8"; // precisa bater com o bodyColor passado acima
+      svg.appendChild(probe);
+      const neutralFill = getComputedStyle(probe).fill;
+      probe.remove();
+
+      const shapes = svg.querySelectorAll("polygon, path, circle, ellipse, rect");
+      const highlighted = Array.from(shapes).filter(el => {
+        const fill = getComputedStyle(el).fill;
+        return fill && fill !== "none" && fill !== neutralFill;
+      });
+
       if (highlighted.length > 0) {
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
         highlighted.forEach(el => {
@@ -481,12 +519,13 @@ function renderMuscleModel(ex) {
         });
         const bw = maxX - minX;
         const bh = maxY - minY;
-        const padX = bw * 0.5;
-        const padY = bh * 0.3;
+        // padding pequeno = zoom mais forte na área destacada
+        const padX = bw * 0.35;
+        const padY = bh * 0.25;
         svg.setAttribute("viewBox", `${minX - padX} ${minY - padY} ${bw + padX * 2} ${bh + padY * 2}`);
       }
     } catch (e) {
-      // se o navegador não suportar getBBox por algum motivo, mantém o corpo inteiro
+      // se o navegador não suportar getBBox/getComputedStyle por algum motivo, mantém o corpo inteiro
     }
   });
 }
