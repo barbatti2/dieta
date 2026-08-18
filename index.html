@@ -215,14 +215,14 @@
       </main>
 
       <footer class="flex-shrink-0 bg-white/80 backdrop-blur-xl border-t border-hairline px-6 pt-4 pb-8 z-50">
-        <div class="w-full bg-clay rounded-2xl shadow-lg shadow-clay/20 flex items-stretch overflow-hidden">
-          <button id="prevExBtn" title="Exercício anterior" class="w-14 flex-shrink-0 flex items-center justify-center text-white/70 border-r border-white/15 hover:bg-black/15 hover:text-white active:scale-95 transition-all disabled:opacity-30 disabled:pointer-events-none">
-            <i class="fa-solid fa-chevron-left text-sm"></i>
+        <div class="w-full flex items-stretch gap-3">
+          <button id="prevExBtn" title="Exercício anterior" class="w-[38%] flex-shrink-0 min-w-0 bg-[#E7E3DA] text-muted font-bold uppercase tracking-wide py-4 px-2 rounded-full hover:bg-hairline transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-sm disabled:opacity-40 disabled:pointer-events-none">
+            <i class="fa-solid fa-chevron-left text-xs flex-shrink-0"></i>
+            <span class="truncate">Anterior</span>
           </button>
-          <button id="mainExecBtn" class="flex-1 min-w-0 text-white font-bold uppercase tracking-wide py-4 px-2 hover:bg-[#b33e27] transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-sm">
-            <i class="fa-solid fa-check flex-shrink-0"></i>
-            <span id="mainExecBtnLabel" class="truncate">Concluir exercício</span>
-            <i class="fa-solid fa-chevron-right text-[10px] opacity-50 flex-shrink-0"></i>
+          <button id="mainExecBtn" class="flex-1 min-w-0 bg-clay text-white font-bold uppercase tracking-wide py-4 px-2 rounded-full shadow-lg shadow-clay/20 hover:bg-[#b33e27] transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-sm">
+            <span id="mainExecBtnLabel" class="truncate">Próximo</span>
+            <i class="fa-solid fa-chevron-right text-xs flex-shrink-0"></i>
           </button>
         </div>
       </footer>
