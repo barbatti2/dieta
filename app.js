@@ -25,16 +25,11 @@ const TEMPLATES = [
   { id: "c", nome: "Pernas e Glúteos", ficha: "Ficha C", tags: ["Quadríceps", "Posterior", "Glúteos"], dias: [3, 6], exercicios: ["agachamento_livre", "leg_press", "cadeira_extensora", "cadeira_flexora", "elevacao_pelvica", "panturrilha_em_pe"] }
 ];
 
-const AVATARS = {
-  voce: "https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg",
-  parceira: "https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-5.jpg"
-};
-
 const PROFILES = {
   voce: {
     nome: "Você",
-    streak: 12,
-    diasTreinados: [2, 4, 6, 9, 11, 12, 13, 15, 16],
+    streak: 0,
+    diasTreinados: [],
     cardioLog: [],
     historicoLog: [],
     concluidosHoje: [],
@@ -43,8 +38,8 @@ const PROFILES = {
   },
   parceira: {
     nome: "Sua parceira",
-    streak: 7,
-    diasTreinados: [3, 5, 8, 10, 13, 14, 16],
+    streak: 0,
+    diasTreinados: [],
     cardioLog: [],
     historicoLog: [],
     concluidosHoje: [],
@@ -102,7 +97,9 @@ function showScreen(name) {
   document.querySelectorAll(".nav-item").forEach(b => {
     const active = b.dataset.nav === name;
     b.classList.toggle("text-clay", active);
+    b.classList.toggle("bg-clay/10", active);
     b.classList.toggle("text-muted", !active);
+    b.classList.toggle("nav-item-active", active);
   });
   // esconde o menu inferior em telas de "fluxo" (execução, editor) — só aparece nas 5 abas principais
   document.getElementById("bottomNav").style.display = TAB_SCREENS.includes(name) ? "flex" : "none";
@@ -499,8 +496,6 @@ function renderExecucao() {
   document.getElementById("repsValue").textContent = ec.reps;
 
   document.getElementById("mainExecBtnLabel").textContent = isLast ? "Concluir Treino" : "Próximo";
-  document.getElementById("mainExecIconNext").classList.toggle("hidden", isLast);
-  document.getElementById("mainExecIconCheck").classList.toggle("hidden", !isLast);
   document.getElementById("prevExBtn").disabled = ec.exercicioIndex === 0;
 
   renderMuscleModel(ex);
