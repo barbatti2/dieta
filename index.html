@@ -11,15 +11,15 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <script>
     tailwind.config = {
       theme: {
         extend: {
           fontFamily: {
-            sans: ['Inter', 'sans-serif'],
-            serif: ['Fraunces', 'serif'],
+            sans: ['Manrope', 'sans-serif'],
+            serif: ['Playfair Display', 'serif'],
           },
           colors: {
             paper: '#F7F5F1',
@@ -36,6 +36,7 @@
     }
   </script>
   <style>
+    html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
     ::-webkit-scrollbar { width: 0; height: 0; display: none; }
     * { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
     body { user-select: none; }
@@ -52,7 +53,7 @@
 </head>
 <body class="bg-paper sm:bg-[#EDE8DF] text-ink font-sans antialiased min-h-screen flex items-center justify-center sm:py-6">
 
-  <div class="w-full max-w-[375px] mx-auto h-screen sm:h-[780px] bg-paper relative flex flex-col sm:rounded-[2.5rem] sm:shadow-2xl sm:shadow-black/10 overflow-hidden">
+  <div class="w-full max-w-[375px] mx-auto h-[100dvh] sm:h-[780px] bg-paper relative flex flex-col sm:rounded-[2.5rem] sm:shadow-2xl sm:shadow-black/10 overflow-hidden">
 
     <!-- toast de confirmação -->
     <div id="toast" class="toast bg-ink text-white text-xs font-bold px-4 py-2.5 rounded-full shadow-lg"></div>
@@ -75,11 +76,6 @@
       </header>
 
       <main class="flex-1 min-h-0 overflow-y-auto px-6 pb-8 space-y-4">
-        <section class="space-y-3" id="todayWorkoutSection">
-          <h2 class="text-[10px] font-bold text-muted uppercase tracking-[0.2em] px-1">Treino de Hoje</h2>
-          <div id="todayWorkoutCard"></div>
-        </section>
-
         <section class="space-y-3">
           <h2 class="text-[10px] font-bold text-muted uppercase tracking-[0.2em] px-1">Últimos 7 dias</h2>
           <div class="bg-card border border-hairline rounded-2xl p-4 shadow-sm flex justify-between items-center" id="weekStrip"></div>
@@ -94,6 +90,11 @@
               <span class="text-xs font-medium opacity-80">dias seguidos treinando</span>
             </div>
           </div>
+        </section>
+
+        <section class="space-y-3" id="todayWorkoutSection">
+          <h2 class="text-[10px] font-bold text-muted uppercase tracking-[0.2em] px-1">Treino de Hoje</h2>
+          <div id="todayWorkoutCard"></div>
         </section>
       </main>
     </section>
@@ -216,7 +217,6 @@
     <section class="screen" data-screen="cardio">
       <header class="flex-shrink-0 px-6 pt-12 pb-4 flex justify-between items-center bg-paper">
         <h1 class="font-serif text-2xl font-medium">Cardio</h1>
-        <button id="cardioCloseBtn" class="w-9 h-9 rounded-full border border-hairline flex items-center justify-center text-muted"><i class="fa-solid fa-xmark"></i></button>
       </header>
 
       <main class="flex-1 min-h-0 overflow-y-auto px-6 pb-32 space-y-10">
@@ -273,6 +273,25 @@
         <button id="confirmCardioBtn" class="w-full bg-ink text-white font-medium py-3.5 rounded-2xl hover:bg-black transition-all active:scale-[0.98] shadow-xl shadow-ink/10">
           Salvar Cardio
         </button>
+      </main>
+    </section>
+
+    <!-- ===================== HISTÓRICO ===================== -->
+    <section class="screen" data-screen="historico">
+      <header class="flex-shrink-0 px-6 pt-12 pb-4 flex justify-between items-center bg-paper">
+        <h1 class="font-serif text-2xl font-medium">Histórico</h1>
+        <div class="profile-toggle flex items-center bg-white border border-hairline p-1 rounded-full shadow-sm gap-1">
+          <button class="profile-btn w-8 h-8 rounded-full overflow-hidden" data-profile="voce">
+            <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg" alt="Você" class="w-full h-full object-cover">
+          </button>
+          <button class="profile-btn w-8 h-8 rounded-full overflow-hidden" data-profile="parceira">
+            <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-5.jpg" alt="Parceira" class="w-full h-full object-cover">
+          </button>
+        </div>
+      </header>
+
+      <main class="flex-1 min-h-0 overflow-y-auto px-6 pb-8">
+        <div id="historicoList" class="space-y-2.5"></div>
       </main>
     </section>
 
@@ -343,6 +362,10 @@
       <button class="nav-item flex flex-col items-center gap-1.5 text-muted transition-colors hover:text-ink" data-nav="cardio">
         <div class="w-5 h-5 flex items-center justify-center"><i class="fa-solid fa-person-running"></i></div>
         <span class="text-[10px] font-bold uppercase tracking-widest">Cardio</span>
+      </button>
+      <button class="nav-item flex flex-col items-center gap-1.5 text-muted transition-colors hover:text-ink" data-nav="historico">
+        <div class="w-5 h-5 flex items-center justify-center"><i class="fa-solid fa-clock-rotate-left"></i></div>
+        <span class="text-[10px] font-bold uppercase tracking-widest">Histórico</span>
       </button>
       <button class="nav-item flex flex-col items-center gap-1.5 text-muted transition-colors hover:text-ink" data-nav="calendario">
         <div class="w-5 h-5 flex items-center justify-center"><i class="fa-regular fa-calendar-check"></i></div>
