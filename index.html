@@ -32,8 +32,9 @@
     }
   </script>
   <style>
-    :root { --app-height: 100%; }
+    :root { --app-height: 100dvh; }
     html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+    .app-container { height: var(--app-height); }
     ::-webkit-scrollbar { width: 0; height: 0; display: none; }
     * { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
     body { user-select: none; }
@@ -52,7 +53,7 @@
 </head>
 <body class="bg-paper sm:bg-[#EDE8DF] text-ink font-sans antialiased min-h-screen flex items-center justify-center sm:py-6">
 
-  <div class="w-full max-w-[375px] mx-auto h-[var(--app-height)] sm:h-[780px] bg-paper relative flex flex-col sm:rounded-[2.5rem] sm:shadow-2xl sm:shadow-black/10 overflow-hidden">
+  <div class="app-container w-full max-w-[375px] mx-auto sm:h-[780px] bg-paper relative flex flex-col sm:rounded-[2.5rem] sm:shadow-2xl sm:shadow-black/10 overflow-hidden">
 
     <!-- toast de confirmação -->
     <div id="toast" class="toast bg-ink text-white text-xs font-bold px-4 py-2.5 rounded-full shadow-lg"></div>

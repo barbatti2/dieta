@@ -17,6 +17,11 @@ function setAppHeight() {
 setAppHeight();
 window.addEventListener("resize", setAppHeight);
 window.addEventListener("orientationchange", setAppHeight);
+window.addEventListener("load", setAppHeight);
+// no primeiro carregamento o Safari às vezes ainda não "assentou" a barra de
+// endereço/toolbar quando o script roda — recalcula de novo logo em seguida
+setTimeout(setAppHeight, 150);
+setTimeout(setAppHeight, 500);
 if (window.visualViewport) {
   window.visualViewport.addEventListener("resize", setAppHeight);
 }
@@ -519,9 +524,9 @@ function renderMuscleModel(ex) {
         });
         const bw = maxX - minX;
         const bh = maxY - minY;
-        // padding pequeno = zoom mais forte na área destacada
-        const padX = bw * 0.35;
-        const padY = bh * 0.25;
+        // padding maior = zoom mais suave; menor = zoom mais forte
+        const padX = bw * 0.75;
+        const padY = bh * 0.55;
         svg.setAttribute("viewBox", `${minX - padX} ${minY - padY} ${bw + padX * 2} ${bh + padY * 2}`);
       }
     } catch (e) {
