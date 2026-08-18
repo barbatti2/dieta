@@ -93,6 +93,9 @@ function showScreen(name) {
     b.classList.toggle("text-clay", active);
     b.classList.toggle("text-muted", !active);
   });
+  // sempre volta pro topo da tela ao trocar de aba/tela
+  const activeMain = document.querySelector(`.screen[data-screen="${name}"] main`);
+  if (activeMain) activeMain.scrollTop = 0;
 }
 
 document.querySelectorAll(".nav-item").forEach(btn => {
@@ -383,7 +386,8 @@ function startExecution(templateId) {
     templateId,
     exercicioIndex: 0,
     weight: 40,
-    reps: 10
+    reps: 10,
+    log: [] // registra peso/reps de cada exercício conforme vai concluindo
   };
   showScreen("execucao");
   renderExecucao();
@@ -409,6 +413,9 @@ function renderExecucao() {
 
   const focusText = [...ex.primary, ...ex.secondary].map(m => muscleLabels[m] || m).join(", ");
   document.getElementById("execFocus").textContent = focusText || "—";
+
+  const grupo = GROUPS.find(g => g.id === ex.grupo);
+  document.getElementById("execGroupTag").textContent = grupo ? grupo.nome : "";
 
   const img = document.getElementById("execImage");
   img.src = ex.imagem || "";
@@ -484,8 +491,13 @@ document.getElementById("prevExBtn").addEventListener("click", () => {
 
 document.getElementById("mainExecBtn").addEventListener("click", () => {
   const ec = state.execucao;
+  if (!ec) return; // segurança: evita clique duplicado depois de já ter concluído
   const t = currentTemplate();
+  const ex = currentExercise();
   const isLast = ec.exercicioIndex === t.exercicios.length - 1;
+
+  // guarda o peso/reps usados neste exercício antes de avançar
+  ec.log.push({ nome: ex.nome, peso: ec.weight, reps: ec.reps });
 
   if (!isLast) {
     ec.exercicioIndex++;
@@ -496,8 +508,15 @@ document.getElementById("mainExecBtn").addEventListener("click", () => {
   // aqui entraria o salvamento real (Firestore) do treino concluído
   const p = currentProfile();
   if (!p.concluidosHoje.includes(t.id)) p.concluidosHoje.push(t.id);
-  registrarNoHistorico({ tipo: "treino", nome: t.nome, ficha: t.ficha, detalhe: `${t.exercicios.length} exercícios` });
+  registrarNoHistorico({
+    tipo: "treino",
+    nome: t.nome,
+    ficha: t.ficha,
+    detalhe: `${t.exercicios.length} exercícios`,
+    exercicios: ec.log
+  });
   marcarDiaTreinado();
+  state.execucao = null;
   renderHoje();
   renderCalendario();
   renderHistorico();
@@ -659,8 +678,15 @@ function renderHistorico() {
     return;
   }
 
-  list.innerHTML = p.historicoLog.map(item => `
-    <div class="bg-card border border-hairline rounded-xl p-3.5 flex items-center gap-3">
+  list.innerHTML = "";
+  p.historicoLog.forEach((item, idx) => {
+    const temExercicios = item.tipo === "treino" && item.exercicios && item.exercicios.length > 0;
+    const card = document.createElement("div");
+    card.className = "bg-card border border-hairline rounded-xl overflow-hidden";
+
+    const header = document.createElement("button");
+    header.className = "w-full p-3.5 flex items-center gap-3 text-left";
+    header.innerHTML = `
       <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
         item.tipo === "treino" ? "bg-claySoft/20 text-clay" : "bg-emerald/10 text-emerald"
       }">
@@ -671,8 +697,29 @@ function renderHistorico() {
         <p class="text-[11px] text-muted truncate">${item.detalhe || ""}</p>
       </div>
       <span class="text-[10px] text-muted flex-shrink-0">${item.quando}</span>
-    </div>
-  `).join("");
+      ${temExercicios ? '<i class="fa-solid fa-chevron-down text-[10px] text-muted flex-shrink-0 chevron-icon transition-transform"></i>' : ""}
+    `;
+    card.appendChild(header);
+
+    if (temExercicios) {
+      const details = document.createElement("div");
+      details.className = "hidden border-t border-hairline divide-y divide-hairline";
+      details.innerHTML = item.exercicios.map(e => `
+        <div class="flex items-center justify-between px-4 py-2.5">
+          <span class="text-xs font-medium">${e.nome}</span>
+          <span class="text-xs text-muted">${e.peso} kg × ${e.reps}</span>
+        </div>
+      `).join("");
+      card.appendChild(details);
+
+      header.addEventListener("click", () => {
+        details.classList.toggle("hidden");
+        header.querySelector(".chevron-icon").classList.toggle("rotate-180");
+      });
+    }
+
+    list.appendChild(card);
+  });
 }
 
 /* =========================================================
