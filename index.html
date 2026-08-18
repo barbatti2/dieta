@@ -214,14 +214,17 @@
         </section>
       </main>
 
-      <footer class="flex-shrink-0 bg-white/80 backdrop-blur-xl border-t border-hairline px-6 pt-4 pb-8 flex flex-col gap-2 z-50">
-        <button id="mainExecBtn" class="w-full bg-clay text-white font-bold uppercase tracking-wide py-4 rounded-2xl hover:bg-[#b33e27] transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-sm shadow-lg shadow-clay/20">
-          <i class="fa-solid fa-check"></i>
-          <span id="mainExecBtnLabel">Concluir exercício</span>
-        </button>
-        <button id="prevExBtn" class="text-xs font-bold text-muted uppercase tracking-widest hover:text-ink transition-colors flex items-center justify-center gap-2 py-1">
-          <i class="fa-solid fa-chevron-left text-[9px]"></i> Exercício anterior
-        </button>
+      <footer class="flex-shrink-0 bg-white/80 backdrop-blur-xl border-t border-hairline px-6 pt-4 pb-8 z-50">
+        <div class="w-full bg-clay rounded-2xl shadow-lg shadow-clay/20 flex items-stretch overflow-hidden">
+          <button id="prevExBtn" title="Exercício anterior" class="w-14 flex-shrink-0 flex items-center justify-center text-white/70 border-r border-white/15 hover:bg-black/15 hover:text-white active:scale-95 transition-all disabled:opacity-30 disabled:pointer-events-none">
+            <i class="fa-solid fa-chevron-left text-sm"></i>
+          </button>
+          <button id="mainExecBtn" class="flex-1 min-w-0 text-white font-bold uppercase tracking-wide py-4 px-2 hover:bg-[#b33e27] transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-sm">
+            <i class="fa-solid fa-check flex-shrink-0"></i>
+            <span id="mainExecBtnLabel" class="truncate">Concluir exercício</span>
+            <i class="fa-solid fa-chevron-right text-[10px] opacity-50 flex-shrink-0"></i>
+          </button>
+        </div>
       </footer>
     </section>
 

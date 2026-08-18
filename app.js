@@ -385,6 +385,50 @@ document.getElementById("editorDeleteBtn").addEventListener("click", () => {
 
 let highlighter = null;
 
+/* ---------------------------------------------------------
+   Salva o treino em andamento no localStorage, para que ele
+   não se perca caso o usuário saia da tela de execução (troque
+   de aba, feche o app ou dê refresh na página no meio do treino).
+   --------------------------------------------------------- */
+const EXEC_STORAGE_KEY = "treinoApp_execucaoEmAndamento";
+
+function salvarExecucaoLocal() {
+  try {
+    if (state.execucao) {
+      localStorage.setItem(EXEC_STORAGE_KEY, JSON.stringify({ perfil: state.perfilAtual, ...state.execucao }));
+    } else {
+      localStorage.removeItem(EXEC_STORAGE_KEY);
+    }
+  } catch (e) {
+    // localStorage pode estar indisponível (modo privado, etc.) — falha silenciosa
+  }
+}
+
+function carregarExecucaoLocal() {
+  try {
+    const raw = localStorage.getItem(EXEC_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+// tenta restaurar um treino salvo (chamado uma vez, no boot do app)
+function restaurarExecucaoSalva() {
+  const saved = carregarExecucaoLocal();
+  if (!saved) return false;
+  const { perfil, ...execucao } = saved;
+  const t = TEMPLATES.find(x => x.id === execucao.templateId);
+  // validação defensiva: só restaura se a ficha salva ainda existir e tiver exercícios
+  if (!t || !t.exercicios || t.exercicios.length === 0 || execucao.exercicioIndex >= t.exercicios.length) {
+    localStorage.removeItem(EXEC_STORAGE_KEY);
+    return false;
+  }
+  if (perfil && PROFILES[perfil]) state.perfilAtual = perfil;
+  state.execucao = execucao;
+  return true;
+}
+
 function startExecution(templateId) {
   const t = TEMPLATES.find(x => x.id === templateId);
   // guarda contra ficha sem exercícios (ex: recém-criada e ainda não configurada):
@@ -395,6 +439,15 @@ function startExecution(templateId) {
     if (t) openEditor(t.id);
     return;
   }
+
+  // se esse mesmo treino já está em andamento (ex: usuário saiu da tela no meio
+  // e voltou depois), continua de onde parou em vez de reiniciar do zero
+  if (state.execucao && state.execucao.templateId === templateId) {
+    showScreen("execucao");
+    renderExecucao();
+    return;
+  }
+
   state.execucao = {
     templateId,
     exercicioIndex: 0,
@@ -402,6 +455,7 @@ function startExecution(templateId) {
     reps: 10,
     log: [] // registra peso/reps de cada exercício conforme vai concluindo
   };
+  salvarExecucaoLocal();
   showScreen("execucao");
   renderExecucao();
 }
@@ -441,7 +495,7 @@ function renderExecucao() {
   document.getElementById("repsValue").textContent = ec.reps;
 
   document.getElementById("mainExecBtnLabel").textContent = isLast ? "Concluir Treino" : `Concluir ${ex.nome}`;
-  document.getElementById("prevExBtn").style.visibility = ec.exercicioIndex === 0 ? "hidden" : "visible";
+  document.getElementById("prevExBtn").disabled = ec.exercicioIndex === 0;
 
   renderMuscleModel(ex);
 }
@@ -539,13 +593,15 @@ document.querySelectorAll(".stepper").forEach(btn => {
     if (target === "reps") ec.reps = Math.max(0, ec.reps + dir);
     document.getElementById("weightValue").textContent = ec.weight;
     document.getElementById("repsValue").textContent = ec.reps;
+    salvarExecucaoLocal();
   });
 });
 
 document.getElementById("prevExBtn").addEventListener("click", () => {
   const ec = state.execucao;
-  if (ec.exercicioIndex > 0) {
+  if (ec && ec.exercicioIndex > 0) {
     ec.exercicioIndex--;
+    salvarExecucaoLocal();
     renderExecucao();
   }
 });
@@ -562,6 +618,7 @@ document.getElementById("mainExecBtn").addEventListener("click", () => {
 
   if (!isLast) {
     ec.exercicioIndex++;
+    salvarExecucaoLocal();
     renderExecucao();
     return;
   }
@@ -578,6 +635,7 @@ document.getElementById("mainExecBtn").addEventListener("click", () => {
   });
   marcarDiaTreinado();
   state.execucao = null;
+  salvarExecucaoLocal(); // treino concluído: limpa o que estava salvo
   renderHoje();
   renderCalendario();
   renderHistorico();
@@ -585,7 +643,14 @@ document.getElementById("mainExecBtn").addEventListener("click", () => {
   showScreen("hoje");
 });
 
-document.getElementById("execCloseBtn").addEventListener("click", () => showScreen("treinos"));
+document.getElementById("execCloseBtn").addEventListener("click", () => {
+  // garante que o progresso atual fique salvo ao sair da tela de execução
+  salvarExecucaoLocal();
+  showScreen("treinos");
+});
+
+// rede de segurança extra: se o usuário fechar/recarregar a aba no meio do treino
+window.addEventListener("beforeunload", salvarExecucaoLocal);
 
 /* =========================================================
    TELA "CARDIO"
@@ -795,4 +860,11 @@ function renderAll() {
   renderCalendario();
 }
 
+// se havia um treino em andamento (usuário saiu no meio), volta direto pra ele
+const tinhaExecucaoSalva = restaurarExecucaoSalva();
 renderAll();
+if (tinhaExecucaoSalva) {
+  renderExecucao();
+  showScreen("execucao");
+  showToast("Continuando de onde você parou 💪");
+}
