@@ -1,17 +1,13 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <script>
-    window.FontAwesomeConfig = { autoReplaceSvg: 'nest' };
-  </script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Projeto Dieta Premium</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <script>
     tailwind.config = {
@@ -19,7 +15,7 @@
         extend: {
           fontFamily: {
             sans: ['Manrope', 'sans-serif'],
-            serif: ['Playfair Display', 'serif'],
+            serif: ['Anton', 'sans-serif'],
           },
           colors: {
             paper: '#F7F5F1',
@@ -49,6 +45,8 @@
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     .weekday-btn { opacity: .5; }
     .weekday-btn.active { opacity: 1; background: #C9482F; color: #fff; border-color: #C9482F; }
+    .font-serif { text-transform: uppercase; letter-spacing: -0.01em; }
+    h1.font-serif, .ex-name-display { line-height: 0.92; }
   </style>
 </head>
 <body class="bg-paper sm:bg-[#EDE8DF] text-ink font-sans antialiased min-h-screen flex items-center justify-center sm:py-6">
@@ -156,54 +154,54 @@
     <!-- ===================== EXECUÇÃO ===================== -->
     <section class="screen" data-screen="execucao">
       <header class="flex-shrink-0 px-6 pt-12 pb-4 bg-paper">
-        <div class="flex items-center justify-between mb-3">
-          <button id="execCloseBtn" class="text-muted hover:text-ink transition-colors"><i class="fa-solid fa-xmark text-lg"></i></button>
-          <div class="flex-1 px-8">
-            <div class="w-full h-1 bg-hairline rounded-full overflow-hidden">
+        <div class="flex items-center justify-between mb-4">
+          <button id="execCloseBtn" class="w-9 h-9 rounded-full bg-clay text-white flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-chevron-left text-sm"></i></button>
+          <div class="flex-1 px-6">
+            <div class="w-full h-1.5 bg-hairline rounded-full overflow-hidden">
               <div class="h-full bg-clay transition-all duration-500" id="execProgressBar" style="width: 0%"></div>
             </div>
           </div>
-          <span class="text-[10px] font-bold text-muted uppercase tracking-widest" id="execIndex">1 / 6</span>
+          <span class="text-[10px] font-bold text-muted uppercase tracking-widest flex-shrink-0" id="execIndex">1 / 6</span>
         </div>
-        <h1 class="font-serif text-2xl font-medium text-center" id="execName">Agachamento Livre</h1>
+        <h1 class="font-serif text-clay text-[26px] leading-[0.95]" id="execName">Agachamento Livre</h1>
+        <span class="inline-block mt-2 bg-clay text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full" id="execGroupTag">Perna</span>
       </header>
 
-      <main class="flex-1 min-h-0 overflow-y-auto px-6 pb-6 space-y-4">
-        <section class="bg-card border border-hairline rounded-2xl p-3 shadow-sm flex flex-col items-center gap-3">
-          <div class="relative w-full aspect-video rounded-lg overflow-hidden bg-paper flex items-center justify-center border border-hairline">
-            <img id="execImage" src="" alt="" class="w-full h-full object-cover">
+      <main class="flex-1 min-h-0 overflow-y-auto px-6 pb-6 space-y-3">
+        <div class="relative w-full aspect-[4/3] rounded-2xl overflow-hidden bg-paper flex items-center justify-center border border-hairline">
+          <img id="execImage" src="" alt="" class="w-full h-full object-cover">
+        </div>
+
+        <section class="flex items-center gap-3">
+          <div class="flex-1 bg-ink rounded-xl px-4 py-3 min-w-0">
+            <p class="text-[10px] font-bold uppercase tracking-widest leading-tight"><span class="text-clay">Foco</span> <span class="text-white">Muscular</span></p>
+            <p class="text-sm font-bold text-white truncate" id="execFocus">Quadríceps, Glúteo</p>
           </div>
-          <div class="flex items-center gap-3 w-full border-t border-hairline pt-3">
-            <div class="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0 bg-paper" id="execModel"></div>
-            <div class="min-w-0">
-              <p class="text-[10px] font-bold text-muted uppercase tracking-widest leading-tight">Foco muscular</p>
-              <p class="text-sm font-bold text-ink truncate" id="execFocus">Quadríceps, Glúteo</p>
-            </div>
-          </div>
+          <div class="w-16 h-16 rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0 bg-card border border-hairline" id="execModel"></div>
         </section>
 
         <section class="grid grid-cols-2 gap-3">
           <div class="bg-card border border-hairline rounded-xl p-3 shadow-sm">
             <p class="text-[9px] font-bold text-muted uppercase tracking-widest mb-2 text-center">Carga (kg)</p>
             <div class="flex items-center justify-between">
-              <button class="stepper w-8 h-8 border border-hairline rounded-full flex items-center justify-center text-muted hover:border-clay hover:text-clay transition-all active:scale-90" data-target="weight" data-dir="-1"><i class="fa-solid fa-minus text-xs"></i></button>
-              <span class="font-serif text-xl" id="weightValue">40</span>
-              <button class="stepper w-8 h-8 border border-hairline rounded-full flex items-center justify-center text-muted hover:border-clay hover:text-clay transition-all active:scale-90" data-target="weight" data-dir="1"><i class="fa-solid fa-plus text-xs"></i></button>
+              <button class="stepper w-9 h-9 border border-hairline rounded-full flex items-center justify-center text-clay hover:bg-clay hover:text-white transition-all active:scale-90" data-target="weight" data-dir="-1"><i class="fa-solid fa-minus text-xs"></i></button>
+              <span class="font-serif text-2xl" id="weightValue">40</span>
+              <button class="stepper w-9 h-9 border border-hairline rounded-full flex items-center justify-center text-clay hover:bg-clay hover:text-white transition-all active:scale-90" data-target="weight" data-dir="1"><i class="fa-solid fa-plus text-xs"></i></button>
             </div>
           </div>
           <div class="bg-card border border-hairline rounded-xl p-3 shadow-sm">
             <p class="text-[9px] font-bold text-muted uppercase tracking-widest mb-2 text-center">Reps</p>
             <div class="flex items-center justify-between">
-              <button class="stepper w-8 h-8 border border-hairline rounded-full flex items-center justify-center text-muted hover:border-clay hover:text-clay transition-all active:scale-90" data-target="reps" data-dir="-1"><i class="fa-solid fa-minus text-xs"></i></button>
-              <span class="font-serif text-xl" id="repsValue">10</span>
-              <button class="stepper w-8 h-8 border border-hairline rounded-full flex items-center justify-center text-muted hover:border-clay hover:text-clay transition-all active:scale-90" data-target="reps" data-dir="1"><i class="fa-solid fa-plus text-xs"></i></button>
+              <button class="stepper w-9 h-9 border border-hairline rounded-full flex items-center justify-center text-clay hover:bg-clay hover:text-white transition-all active:scale-90" data-target="reps" data-dir="-1"><i class="fa-solid fa-minus text-xs"></i></button>
+              <span class="font-serif text-2xl" id="repsValue">10</span>
+              <button class="stepper w-9 h-9 border border-hairline rounded-full flex items-center justify-center text-clay hover:bg-clay hover:text-white transition-all active:scale-90" data-target="reps" data-dir="1"><i class="fa-solid fa-plus text-xs"></i></button>
             </div>
           </div>
         </section>
       </main>
 
       <footer class="flex-shrink-0 bg-white/80 backdrop-blur-xl border-t border-hairline px-6 pt-4 pb-8 flex flex-col gap-2 z-50">
-        <button id="mainExecBtn" class="w-full bg-ink text-white font-medium py-3.5 rounded-2xl hover:bg-black transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-sm">
+        <button id="mainExecBtn" class="w-full bg-clay text-white font-bold uppercase tracking-wide py-4 rounded-2xl hover:bg-[#b33e27] transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-sm shadow-lg shadow-clay/20">
           <i class="fa-solid fa-check"></i>
           <span id="mainExecBtnLabel">Concluir exercício</span>
         </button>
