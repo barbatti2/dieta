@@ -593,13 +593,13 @@ function renderTodayWorkout() {
 
     if (concluido) {
       card.innerHTML = `
-        <button class="reabrirTreinoBtn w-full rounded-2xl p-4 flex items-center gap-3 text-left transition-all active:scale-[0.98]" style="background:#101913;border:1px solid #234032;">
+        <button class="reabrirTreinoBtn w-full rounded-2xl p-4 flex items-center gap-4 text-left transition-all active:scale-[0.98]" style="background:#101913;border:1px solid #234032;">
           <div class="w-9 h-9 bg-emerald rounded-full flex items-center justify-center text-white flex-shrink-0">
             <i data-lucide="check" class="text-xs"></i>
           </div>
           <div class="min-w-0 flex-1">
-            <span class="text-[10px] font-bold text-emerald uppercase tracking-[0.15em]">${t.ficha} · Concluído</span>
-            <h3 class="text-base font-extrabold text-white truncate">${t.nome}</h3>
+            <span class="text-[10px] font-bold text-emerald uppercase tracking-[0.15em] mb-0.5 block">${t.ficha} · Concluído</span>
+            <h3 class="text-sm font-extrabold text-white uppercase tracking-tight truncate">${t.nome}</h3>
           </div>
           <i data-lucide="rotate-ccw" class="text-emerald text-sm flex-shrink-0"></i>
         </button>
