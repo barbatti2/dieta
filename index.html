@@ -230,7 +230,6 @@
         </div>
         <h1 class="font-serif text-clay text-[26px] leading-[0.95]" id="execName">Agachamento Livre</h1>
         <span class="inline-block mt-2 bg-clay text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full" id="execGroupTag">Perna</span>
-        <p class="mt-2 text-[11px] font-bold text-gray-500 uppercase tracking-wide" id="execMeta">Meta: 3× 10 reps · Descanso 60s</p>
       </header>
 
       <main class="flex-1 min-h-0 overflow-y-auto px-6 pb-6 space-y-3">
@@ -246,24 +245,7 @@
           <div class="w-28 h-28 rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0 bg-card border border-hairline" id="execModel"></div>
         </section>
 
-        <section class="grid grid-cols-2 gap-3">
-          <div class="bg-card border border-hairline rounded-xl p-3 shadow-sm">
-            <p class="text-[9px] font-bold text-muted uppercase tracking-widest mb-2 text-center">Carga (kg)</p>
-            <div class="flex items-center justify-between">
-              <button class="stepper w-9 h-9 border border-hairline rounded-full flex items-center justify-center text-clay hover:bg-clay hover:text-white transition-all active:scale-90" data-target="weight" data-dir="-1"><i data-lucide="minus" class="text-xs"></i></button>
-              <span class="font-serif text-2xl" id="weightValue">40</span>
-              <button class="stepper w-9 h-9 border border-hairline rounded-full flex items-center justify-center text-clay hover:bg-clay hover:text-white transition-all active:scale-90" data-target="weight" data-dir="1"><i data-lucide="plus" class="text-xs"></i></button>
-            </div>
-          </div>
-          <div class="bg-card border border-hairline rounded-xl p-3 shadow-sm">
-            <p class="text-[9px] font-bold text-muted uppercase tracking-widest mb-2 text-center">Reps</p>
-            <div class="flex items-center justify-between">
-              <button class="stepper w-9 h-9 border border-hairline rounded-full flex items-center justify-center text-clay hover:bg-clay hover:text-white transition-all active:scale-90" data-target="reps" data-dir="-1"><i data-lucide="minus" class="text-xs"></i></button>
-              <span class="font-serif text-2xl" id="repsValue">10</span>
-              <button class="stepper w-9 h-9 border border-hairline rounded-full flex items-center justify-center text-clay hover:bg-clay hover:text-white transition-all active:scale-90" data-target="reps" data-dir="1"><i data-lucide="plus" class="text-xs"></i></button>
-            </div>
-          </div>
-        </section>
+        <section class="bg-card border border-hairline rounded-2xl p-4" id="execSeriesCard"></section>
       </main>
 
       <footer class="flex-shrink-0 backdrop-blur-xl border-t border-hairline px-6 pt-4 pb-8 flex items-center gap-3 z-50" style="background:rgba(10,10,11,.92);">

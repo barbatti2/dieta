@@ -408,8 +408,7 @@ function reabrirTreino(t) {
   p.execucao = {
     templateId: t.id,
     exercicioIndex: Math.max(0, t.exercicios.length - 1),
-    weight: 40,
-    reps: 10,
+    pesosPorExercicio: {},
     log: []
   };
   p.hojeTemplateId = t.id;
@@ -668,9 +667,8 @@ function startExecution(templateId) {
     currentProfile().execucao = {
       templateId,
       exercicioIndex: 0,
-      weight: 40,
-      reps: 10,
-      log: [] // registra peso/reps de cada exercício conforme vai concluindo
+      pesosPorExercicio: {}, // { [exercicioIndex]: [pesoSerie1, pesoSerie2, ...] }
+      log: [] // registra as cargas de cada exercício conforme vai concluindo
     };
   }
   showScreen("execucao");
@@ -689,6 +687,23 @@ function currentExercise() {
   return { id: cfg.id, ...EXERCISES[cfg.id] };
 }
 
+// pesos digitados por série do exercício atual (guarda um array por índice
+// de exercício, pra não perder o que já foi digitado ao voltar/avançar)
+function getPesosArray(ec, cfg, exercicioIndex) {
+  if (!ec.pesosPorExercicio) ec.pesosPorExercicio = {};
+  const antigo = ec.pesosPorExercicio[exercicioIndex] || [];
+  if (antigo.length !== cfg.series) {
+    const arr = [];
+    for (let i = 0; i < cfg.series; i++) arr.push(antigo[i] ?? null);
+    ec.pesosPorExercicio[exercicioIndex] = arr;
+  }
+  return ec.pesosPorExercicio[exercicioIndex];
+}
+
+// enquanto uma carga já preenchida está sendo re-editada (clicou em cima do
+// número), ela some da lista, e volta a virar campo de digitar
+let execEditingSeries = new Set();
+
 function renderExecucao() {
   const t = currentTemplate();
   const ex = currentExercise();
@@ -705,20 +720,99 @@ function renderExecucao() {
   const grupo = GROUPS.find(g => g.id === ex.grupo);
   document.getElementById("execGroupTag").textContent = grupo ? grupo.nome : "";
 
-  const cfg = currentExercicioCfg();
-  document.getElementById("execMeta").textContent = `Meta: ${repsResumo(cfg.series, cfg.reps)} · Descanso ${cfg.descanso}s`;
-
   const img = document.getElementById("execImage");
   img.src = ex.imagem || "";
   img.alt = ex.nome;
 
-  document.getElementById("weightValue").textContent = ec.weight;
-  document.getElementById("repsValue").textContent = ec.reps;
-
   document.getElementById("mainExecBtnLabel").textContent = isLast ? "Concluir Treino" : "Próximo";
   document.getElementById("prevExBtn").disabled = ec.exercicioIndex === 0;
 
+  execEditingSeries = new Set();
+  renderExecSeries();
   renderMuscleModel(ex);
+  refreshIcons();
+}
+
+function renderExecSeries() {
+  const t = currentTemplate();
+  const ex = currentExercise();
+  const cfg = currentExercicioCfg();
+  const ec = currentProfile().execucao;
+  const pesos = getPesosArray(ec, cfg, ec.exercicioIndex);
+  const grupo = GROUPS.find(g => g.id === ex.grupo);
+
+  const container = document.getElementById("execSeriesCard");
+  container.innerHTML = `
+    <div class="grid grid-cols-3 divide-x divide-hairline text-center mb-4">
+      <div class="px-1">
+        <i data-lucide="target" class="text-clay mx-auto mb-1" style="width:20px;height:20px;"></i>
+        <p class="text-[9px] font-bold text-gray-500 uppercase tracking-wide">Meta</p>
+        <p class="text-base font-extrabold text-white leading-tight">${repsResumo(cfg.series, cfg.reps)}</p>
+      </div>
+      <div class="px-1">
+        <i data-lucide="clock" class="text-clay mx-auto mb-1" style="width:20px;height:20px;"></i>
+        <p class="text-[9px] font-bold text-gray-500 uppercase tracking-wide">Descanso</p>
+        <p class="text-lg font-extrabold text-white leading-tight mt-1">${cfg.descanso}s</p>
+      </div>
+      <div class="px-1">
+        <i data-lucide="dumbbell" class="text-clay mx-auto mb-1" style="width:20px;height:20px;"></i>
+        <p class="text-[9px] font-bold text-gray-500 uppercase tracking-wide">Foco</p>
+        <p class="text-sm font-extrabold text-white leading-tight mt-1.5 truncate">${grupo ? grupo.nome : "—"}</p>
+      </div>
+    </div>
+    <div class="h-px bg-hairline mb-4"></div>
+    <div class="flex justify-around mb-4">
+      ${pesos.map((peso, i) => `
+        <div class="flex flex-col items-center gap-1.5">
+          <span class="text-[10px] font-bold text-gray-500 whitespace-nowrap">${i + 1}ª carga</span>
+          <div class="w-6 h-6 rounded-full border flex items-center justify-center transition-all ${
+            peso != null && !execEditingSeries.has(i) ? "bg-clay border-clay" : "border-hairline"
+          }">
+            ${peso != null && !execEditingSeries.has(i) ? '<i data-lucide="check" class="text-white" style="width:12px;height:12px;"></i>' : ""}
+          </div>
+        </div>
+      `).join("")}
+    </div>
+    <div class="flex items-center gap-1.5 mb-2">
+      <i data-lucide="weight" class="text-clay" style="width:14px;height:14px;"></i>
+      <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wide">Carga (kg)</span>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      ${pesos.map((peso, i) => {
+        const mostrarInput = peso == null || execEditingSeries.has(i);
+        return `
+          <div style="flex:1 1 70px;">
+            ${mostrarInput
+              ? `<input type="number" inputmode="decimal" step="0.5" class="serie-peso-input w-full bg-[#1C1C1E] border border-hairline rounded-xl py-2.5 text-center text-white font-bold outline-none focus:border-clay" placeholder="Ex.: 40" value="${peso != null ? peso : ""}" data-idx="${i}">`
+              : `<button type="button" class="serie-peso-display w-full bg-[#1C1C1E] border border-clay rounded-xl py-2.5 text-center active:scale-[0.97] transition-all" data-idx="${i}">
+                   <span class="text-base font-extrabold text-white">${peso}</span><span class="text-[10px] text-gray-500 ml-0.5">kg</span>
+                 </button>`
+            }
+          </div>
+        `;
+      }).join("")}
+    </div>
+  `;
+
+  container.querySelectorAll(".serie-peso-input").forEach(input => {
+    if (execEditingSeries.has(parseInt(input.dataset.idx, 10))) input.focus();
+    input.addEventListener("keydown", (e) => { if (e.key === "Enter") input.blur(); });
+    input.addEventListener("blur", () => {
+      const i = parseInt(input.dataset.idx, 10);
+      const val = parseFloat(input.value.replace(",", "."));
+      pesos[i] = (!isNaN(val) && val >= 0) ? val : null;
+      execEditingSeries.delete(i);
+      renderExecSeries();
+      saveProfileDebounced(state.perfilAtual);
+    });
+  });
+  container.querySelectorAll(".serie-peso-display").forEach(btn => {
+    btn.addEventListener("click", () => {
+      execEditingSeries.add(parseInt(btn.dataset.idx, 10));
+      renderExecSeries();
+    });
+  });
+
   refreshIcons();
 }
 
@@ -805,15 +899,7 @@ document.querySelectorAll(".stepper").forEach(btn => {
     if (target === "cardioMin") {
       const el = document.getElementById("cardioMinValue");
       el.textContent = Math.max(0, parseInt(el.textContent, 10) + dir * 5);
-      return;
     }
-    const ec = currentProfile().execucao;
-    if (!ec) return;
-    if (target === "weight") ec.weight = Math.max(0, ec.weight + dir * 2.5);
-    if (target === "reps") ec.reps = Math.max(0, ec.reps + dir);
-    document.getElementById("weightValue").textContent = ec.weight;
-    document.getElementById("repsValue").textContent = ec.reps;
-    saveProfileDebounced(state.perfilAtual);
   });
 });
 
@@ -831,10 +917,12 @@ document.getElementById("mainExecBtn").addEventListener("click", () => {
   if (!ec) return; // segurança: evita clique duplicado depois de já ter concluído
   const t = currentTemplate();
   const ex = currentExercise();
+  const cfg = currentExercicioCfg();
   const isLast = ec.exercicioIndex === t.exercicios.length - 1;
 
-  // guarda o peso/reps usados neste exercício antes de avançar
-  ec.log.push({ nome: ex.nome, peso: ec.weight, reps: ec.reps });
+  // guarda as cargas de cada série deste exercício antes de avançar
+  const pesos = getPesosArray(ec, cfg, ec.exercicioIndex);
+  ec.log.push({ nome: ex.nome, series: cfg.series, reps: cfg.reps, pesos: pesos.slice() });
 
   if (!isLast) {
     ec.exercicioIndex++;
@@ -1050,12 +1138,17 @@ function renderHistorico() {
     if (temExercicios) {
       const details = document.createElement("div");
       details.className = "hidden border-t border-hairline divide-y divide-hairline";
-      details.innerHTML = item.exercicios.map(e => `
-        <div class="flex items-center justify-between px-4 py-2.5">
-          <span class="text-xs font-medium">${e.nome}</span>
-          <span class="text-xs text-muted">${e.peso} kg × ${e.reps}</span>
+      details.innerHTML = item.exercicios.map(e => {
+        const pesosTexto = (e.pesos && e.pesos.length)
+          ? e.pesos.map(p => p != null ? `${p}kg` : "—").join(" · ")
+          : "—";
+        return `
+        <div class="flex items-center justify-between px-4 py-2.5 gap-3">
+          <span class="text-xs font-medium truncate">${e.nome}</span>
+          <span class="text-xs text-muted text-right flex-shrink-0">${repsResumo(e.series, e.reps)}<br>${pesosTexto}</span>
         </div>
-      `).join("");
+      `;
+      }).join("");
       card.appendChild(details);
 
       header.querySelector(".historico-toggle").addEventListener("click", () => {
