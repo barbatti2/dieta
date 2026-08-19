@@ -1201,9 +1201,19 @@ document.querySelectorAll(".stepper").forEach(btn => {
     if (target === "cardioMin") {
       const el = document.getElementById("cardioMinValue");
       el.textContent = Math.max(0, parseInt(el.textContent, 10) + dir * 5);
+      syncCardioPresetActive();
     }
   });
 });
+
+// mantém o preset (15/30/60) destacado só enquanto o valor bater com ele —
+// se o usuário mexer no +/- e sair desses valores, nenhum preset fica marcado
+function syncCardioPresetActive() {
+  const atual = document.getElementById("cardioMinValue").textContent;
+  document.querySelectorAll(".cardio-preset").forEach(b => {
+    b.classList.toggle("active", b.dataset.min === atual);
+  });
+}
 
 document.getElementById("prevExBtn").addEventListener("click", () => {
   const ec = currentProfile().execucao;
@@ -1298,6 +1308,7 @@ document.querySelectorAll(".cardio-type-btn").forEach(btn => {
 document.querySelectorAll(".cardio-preset").forEach(btn => {
   btn.addEventListener("click", () => {
     document.getElementById("cardioMinValue").textContent = btn.dataset.min;
+    syncCardioPresetActive();
   });
 });
 

@@ -59,6 +59,7 @@
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     .weekday-btn { opacity: .5; }
     .weekday-btn.active { opacity: 1; background: #C9482F; color: #fff; border-color: #C9482F; }
+    .cardio-preset.active { border-color: #C9482F; color: #C9482F; background: rgba(201,72,47,.08); }
     .font-serif { text-transform: uppercase; letter-spacing: -0.01em; }
     h1.font-serif, .ex-name-display { line-height: 0.92; }
     /* menu inferior: o texto fica escondido (largura 0) e só "abre" com uma
@@ -290,21 +291,21 @@
           </div>
         </section>
 
-        <section class="space-y-4">
+        <section class="space-y-3">
           <h2 class="text-[10px] font-bold text-muted uppercase tracking-[0.2em] px-2">Tempo (minutos)</h2>
-          <div class="bg-card border border-hairline rounded-[1.75rem] p-4 shadow-sm flex flex-col items-center gap-4">
+          <div class="bg-card border border-hairline rounded-3xl p-3.5 shadow-sm flex flex-col items-center gap-3">
             <div class="flex items-center gap-4">
-              <button class="stepper w-10 h-10 border border-hairline rounded-full flex items-center justify-center text-muted hover:border-clay hover:text-clay transition-all active:scale-90" data-target="cardioMin" data-dir="-1"><i data-lucide="minus" class="text-lg"></i></button>
+              <button class="stepper w-9 h-9 border border-hairline rounded-full flex items-center justify-center text-muted hover:border-clay hover:text-clay transition-all active:scale-90" data-target="cardioMin" data-dir="-1"><i data-lucide="minus" class="text-base"></i></button>
               <div class="flex flex-col items-center">
-                <span class="font-serif text-4xl text-ink leading-none" id="cardioMinValue">45</span>
-                <span class="text-[10px] font-bold text-muted uppercase tracking-widest mt-2">minutos</span>
+                <span class="font-serif text-3xl text-ink leading-none" id="cardioMinValue">45</span>
+                <span class="text-[10px] font-bold text-muted uppercase tracking-widest mt-1.5">minutos</span>
               </div>
-              <button class="stepper w-10 h-10 border border-hairline rounded-full flex items-center justify-center text-muted hover:border-clay hover:text-clay transition-all active:scale-90" data-target="cardioMin" data-dir="1"><i data-lucide="plus" class="text-lg"></i></button>
+              <button class="stepper w-9 h-9 border border-hairline rounded-full flex items-center justify-center text-muted hover:border-clay hover:text-clay transition-all active:scale-90" data-target="cardioMin" data-dir="1"><i data-lucide="plus" class="text-base"></i></button>
             </div>
-            <div class="flex gap-2 w-full mt-4">
-              <button class="cardio-preset flex-1 bg-paper border border-hairline py-2 rounded-full text-[10px] font-bold text-muted uppercase tracking-tighter hover:bg-claySoft/20 transition-all" data-min="15">15 min</button>
-              <button class="cardio-preset flex-1 bg-paper border border-hairline py-2 rounded-full text-[10px] font-bold text-muted uppercase tracking-tighter hover:bg-claySoft/20 transition-all" data-min="30">30 min</button>
-              <button class="cardio-preset flex-1 bg-paper border border-hairline py-2 rounded-full text-[10px] font-bold text-muted uppercase tracking-tighter hover:bg-claySoft/20 transition-all" data-min="60">60 min</button>
+            <div class="flex gap-2 w-full mt-1">
+              <button class="cardio-preset flex-1 bg-paper border border-hairline py-2 rounded-full text-[10px] font-bold text-muted uppercase tracking-tighter transition-all" data-min="15">15 min</button>
+              <button class="cardio-preset flex-1 bg-paper border border-hairline py-2 rounded-full text-[10px] font-bold text-muted uppercase tracking-tighter transition-all" data-min="30">30 min</button>
+              <button class="cardio-preset flex-1 bg-paper border border-hairline py-2 rounded-full text-[10px] font-bold text-muted uppercase tracking-tighter transition-all" data-min="60">60 min</button>
             </div>
           </div>
         </section>
