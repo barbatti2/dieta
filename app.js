@@ -442,17 +442,41 @@ function renderTodayWorkout() {
   refreshIcons();
 }
 
+// desfaz o registro de uma entrada do histórico: tira do histórico, tira
+// da lista de "concluídos" daquele dia (se for treino) e, se não sobrar
+// mais nada registrado naquele dia, desmarca o dia como treinado
+function removerDoHistorico(p, idx) {
+  const item = p.historicoLog[idx];
+  const diaDoItem = item.dia;
+  p.historicoLog.splice(idx, 1);
+
+  if (item.tipo === "treino" && item.templateId && p.concluidosPorDia[diaDoItem]) {
+    const i2 = p.concluidosPorDia[diaDoItem].indexOf(item.templateId);
+    if (i2 >= 0) p.concluidosPorDia[diaDoItem].splice(i2, 1);
+  }
+
+  if (diaDoItem) {
+    const aindaTemNesseDia = p.historicoLog.some(x => x.dia === diaDoItem);
+    if (!aindaTemNesseDia) {
+      const di = p.diasTreinados.indexOf(diaDoItem);
+      if (di >= 0) p.diasTreinados.splice(di, 1);
+    }
+  }
+}
+
 // reabre um treino já concluído hoje, com confirmação — volta pro último
-// exercício da ficha, saindo da lista de concluídos
+// exercício da ficha, saindo da lista de concluídos. Também remove o
+// registro de conclusão de hoje do histórico: senão, ao concluir de novo,
+// ficaria contando como um segundo treino separado (duplicado)
 function reabrirTreino(t) {
   const p = currentProfile();
-  const ok = window.confirm(`Reabrir "${t.nome}"? Ele vai sair da lista de treinos concluídos de hoje.`);
+  const ok = window.confirm(`Reabrir "${t.nome}"? Isso remove o registro de conclusão de hoje desse treino do histórico — ele volta a valer só quando você concluir de novo.`);
   if (!ok) return;
-  const listaHoje = p.concluidosPorDia[todayStr()];
-  if (listaHoje) {
-    const idx = listaHoje.indexOf(t.id);
-    if (idx >= 0) listaHoje.splice(idx, 1);
-  }
+
+  const dia = todayStr();
+  const idxHist = p.historicoLog.findIndex(x => x.tipo === "treino" && x.templateId === t.id && x.dia === dia);
+  if (idxHist >= 0) removerDoHistorico(p, idxHist);
+
   p.execucao = {
     templateId: t.id,
     exercicioIndex: Math.max(0, t.exercicios.length - 1),
@@ -462,6 +486,8 @@ function reabrirTreino(t) {
   p.hojeTemplateId = t.id;
   showScreen("execucao");
   renderExecucao();
+  renderHistorico();
+  renderCalendario();
   saveProfile(state.perfilAtual);
 }
 
@@ -815,20 +841,15 @@ function renderExecSeries() {
       <i data-lucide="weight" class="text-clay" style="width:12px;height:12px;"></i>
       <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Carga (kg)</span>
     </div>
-    <div class="flex flex-wrap gap-1.5">
+    <div class="grid gap-1.5" style="grid-template-columns: repeat(${Math.min(pesos.length, 6)}, minmax(0, 1fr));">
       ${pesos.map((peso, i) => {
         const mostrarInput = peso == null || execEditingSeries.has(i);
-        return `
-          <div style="flex:1 1 70px;">
-            ${mostrarInput
-              ? `<input type="number" inputmode="decimal" step="0.5" class="serie-peso-input w-full bg-[#1C1C1E] border border-hairline rounded-xl py-2 text-center text-white font-bold outline-none focus:border-clay" placeholder="Ex.: 40" value="${peso != null ? peso : ""}" data-idx="${i}">`
-              : `<button type="button" class="serie-peso-display w-full bg-[#1C1C1E] border border-clay rounded-xl py-2 text-center active:scale-[0.97] transition-all flex items-center justify-center gap-1" data-idx="${i}">
-                   <i data-lucide="check" class="text-clay" style="width:11px;height:11px;"></i>
-                   <span class="text-sm font-extrabold text-white">${peso}</span><span class="text-[10px] text-gray-500">kg</span>
-                 </button>`
-            }
-          </div>
-        `;
+        return mostrarInput
+          ? `<input type="number" inputmode="decimal" step="0.5" class="serie-peso-input w-full bg-[#1C1C1E] border border-hairline rounded-xl py-2 text-center text-white font-bold outline-none focus:border-clay" placeholder="Ex.: 40" value="${peso != null ? peso : ""}" data-idx="${i}">`
+          : `<button type="button" class="serie-peso-display w-full bg-[#1C1C1E] border border-clay rounded-xl py-2 text-center active:scale-[0.97] transition-all flex items-center justify-center gap-1" data-idx="${i}">
+               <i data-lucide="check" class="text-clay" style="width:11px;height:11px;"></i>
+               <span class="text-sm font-extrabold text-white">${peso}</span><span class="text-[10px] text-gray-500">kg</span>
+             </button>`;
       }).join("")}
     </div>
   `;
@@ -1005,19 +1026,22 @@ document.querySelectorAll(".cardio-type-btn").forEach(btn => {
   btn.addEventListener("click", () => {
     state.cardioTipo = btn.dataset.type;
     document.querySelectorAll(".cardio-type-btn").forEach(b => {
+      // usa "i, svg" porque o lucide já trocou os <i data-lucide> originais
+      // por <svg> assim que a tela carregou — buscar só "i" não encontrava
+      // mais nada e a cor do ícone nunca era atualizada
+      const icon = b.querySelector("i, svg");
+      const label = b.querySelector("span");
       b.classList.remove("border-2", "border-clay");
       b.classList.add("border", "border-hairline");
-      b.querySelector("i").classList.remove("text-clay");
-      b.querySelector("i").classList.add("text-muted");
-      b.querySelector("span").classList.remove("text-ink");
-      b.querySelector("span").classList.add("text-muted");
+      if (icon) { icon.classList.remove("text-clay"); icon.classList.add("text-muted"); }
+      if (label) { label.classList.remove("text-ink"); label.classList.add("text-muted"); }
     });
+    const icon = btn.querySelector("i, svg");
+    const label = btn.querySelector("span");
     btn.classList.remove("border", "border-hairline");
     btn.classList.add("border-2", "border-clay");
-    btn.querySelector("i").classList.remove("text-muted");
-    btn.querySelector("i").classList.add("text-clay");
-    btn.querySelector("span").classList.remove("text-muted");
-    btn.querySelector("span").classList.add("text-ink");
+    if (icon) { icon.classList.remove("text-muted"); icon.classList.add("text-clay"); }
+    if (label) { label.classList.remove("text-muted"); label.classList.add("text-ink"); }
   });
 });
 
@@ -1042,7 +1066,7 @@ document.querySelectorAll(".intensity-btn").forEach(btn => {
 document.getElementById("confirmCardioBtn").addEventListener("click", () => {
   const p = currentProfile();
   const minutos = document.getElementById("cardioMinValue").textContent;
-  const cardioLabels = { esteira: "Esteira", bike: "Bike", eliptico: "Elíptico", outro: "Outra atividade" };
+  const cardioLabels = { esteira: "Esteira", bike: "Bike", eliptico: "Elíptico", escada: "Escada" };
   const intensidadeLabels = { leve: "Leve", moderado: "Moderado", forte: "Forte" };
   const dia = todayStr();
   p.cardioLog.push({ tipo: state.cardioTipo, minutos, intensidade: state.cardioIntensidade, dia });
@@ -1234,25 +1258,7 @@ function renderHistorico() {
       e.stopPropagation();
       if (!confirm(`Excluir "${item.nome}" do histórico?`)) return;
 
-      const diaDoItem = item.dia;
-      p.historicoLog.splice(idx, 1);
-
-      // se era um treino concluído, tira ele da lista de "concluídos" daquele
-      // dia — senão continuaria aparecendo como finalizado mesmo excluído
-      if (item.tipo === "treino" && item.templateId && p.concluidosPorDia[diaDoItem]) {
-        const i2 = p.concluidosPorDia[diaDoItem].indexOf(item.templateId);
-        if (i2 >= 0) p.concluidosPorDia[diaDoItem].splice(i2, 1);
-      }
-
-      // só desmarca o dia como "treinado" (sequência, calendário) se não
-      // sobrou mais nenhum registro naquele mesmo dia
-      if (diaDoItem) {
-        const aindaTemNesseDia = p.historicoLog.some(x => x.dia === diaDoItem);
-        if (!aindaTemNesseDia) {
-          const di = p.diasTreinados.indexOf(diaDoItem);
-          if (di >= 0) p.diasTreinados.splice(di, 1);
-        }
-      }
+      removerDoHistorico(p, idx);
 
       renderHistorico();
       renderHoje();
