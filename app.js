@@ -140,8 +140,13 @@ function renderHoje() {
 
   const strip = document.getElementById("weekStrip");
   strip.innerHTML = "";
-  for (let i = 6; i >= 0; i--) {
-    const dayNum = HOJE_DIA - i;
+  // semana fixa de segunda a domingo (não é "últimos 7 dias" rolando — ela
+  // reinicia toda segunda-feira, ancorada no dia de hoje)
+  const hojeWeekday = HOJE_DIA % 7; // 0=Dom, 1=Seg, ... 6=Sáb
+  const diasDesdeSegunda = (hojeWeekday + 6) % 7; // Seg=0, Ter=1, ... Dom=6
+  const segundaDia = HOJE_DIA - diasDesdeSegunda;
+  for (let offset = 0; offset <= 6; offset++) {
+    const dayNum = segundaDia + offset;
     const trained = p.diasTreinados.includes(dayNum);
     const isToday = dayNum === HOJE_DIA;
     const highlight = trained || isToday;
@@ -515,8 +520,8 @@ function renderMuscleModel(ex) {
     container,
     data,
     type: hasBack ? "posterior" : "anterior",
-    bodyColor: "#D8D3C8",
-    highlightedColors: ["#E7B8A9", "#C9482F"],
+    bodyColor: "#3A3A3D",
+    highlightedColors: ["#E2896F", "#C9482F"],
     style: { width: "100%", height: "100%" }
   });
 
@@ -543,7 +548,7 @@ function renderMuscleModel(ex) {
     // músculo destacado.
     try {
       const probe = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-      probe.style.fill = "#D8D3C8"; // precisa bater com o bodyColor passado acima
+      probe.style.fill = "#3A3A3D"; // precisa bater com o bodyColor passado acima
       svg.appendChild(probe);
       const neutralFill = getComputedStyle(probe).fill;
       probe.remove();
@@ -746,7 +751,7 @@ function renderCalendario() {
     const cell = document.createElement("button");
     cell.textContent = day;
     cell.className = "cal-day text-center py-3 text-xs font-medium rounded-full relative transition-all " +
-      (isSelected ? "bg-ink text-white scale-110 shadow-lg shadow-ink/20" :
+      (isSelected ? "bg-[#1C1C1E] border border-clay text-white scale-110 shadow-lg shadow-black/40" :
        isToday ? "font-bold bg-clay text-white shadow-lg shadow-clay/20" :
        trained ? "bg-clay/5 text-clay" : "text-ink hover:bg-hairline/40");
     if (trained && !isSelected) {
