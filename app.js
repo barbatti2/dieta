@@ -104,10 +104,21 @@ const HOJE_DIA = 16; // dia fake usado como "hoje" nos dados de exemplo
    fichas de treino ficam em templates/{id}
    ========================================================= */
 
-import { db } from './firebase-config.js';
+import { db, app } from './firebase-config.js';
 import {
   doc, getDoc, setDoc, getDocs, deleteDoc, collection, writeBatch
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+import {
+  getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut,
+  setPersistence, browserLocalPersistence
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+
+// login do app é só por senha (sem e-mail/Google) — por baixo dos panos
+// isso usa um único usuário fixo no Firebase Authentication, com um
+// e-mail interno que o usuário nunca vê nem digita.
+const APP_LOGIN_EMAIL = "acesso@treinos-b6a37.internal";
+const auth = getAuth(app);
+setPersistence(auth, browserLocalPersistence).catch(() => {});
 
 // salva o perfil inteiro (streak, dias treinados, execução em andamento, etc)
 async function saveProfile(profileId) {
@@ -1079,13 +1090,55 @@ function renderAll() {
 }
 
 /* =========================================================
-   INICIALIZAÇÃO — busca tudo no Firestore antes da primeira
-   renderização (com uma telinha de carregamento nesse meio tempo)
+   LOGIN — senha única do app (Firebase Auth por baixo dos panos,
+   com e-mail interno fixo que o usuário nunca vê)
    ========================================================= */
 
-(async () => {
-  await carregarDadosIniciais();
-  renderAll();
-  const loader = document.getElementById("appLoader");
-  if (loader) loader.remove();
-})();
+function showLoginScreen() {
+  document.getElementById("appLoader").style.display = "none";
+  const login = document.getElementById("loginScreen");
+  login.style.display = "flex";
+  document.getElementById("loginPassword").value = "";
+  document.getElementById("loginError").classList.add("hidden");
+  document.getElementById("loginPassword").focus();
+}
+
+function hideLoginScreen() {
+  document.getElementById("loginScreen").style.display = "none";
+}
+
+document.getElementById("loginForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById("loginSubmitBtn");
+  const pass = document.getElementById("loginPassword").value;
+  if (!pass) return;
+  btn.disabled = true;
+  btn.textContent = "Entrando...";
+  try {
+    await signInWithEmailAndPassword(auth, APP_LOGIN_EMAIL, pass);
+    // o resto (carregar dados e mostrar o app) acontece no onAuthStateChanged
+  } catch (err) {
+    document.getElementById("loginError").classList.remove("hidden");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Entrar";
+  }
+});
+
+document.querySelectorAll(".logout-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    if (confirm("Sair do app?")) signOut(auth);
+  });
+});
+
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    hideLoginScreen();
+    document.getElementById("appLoader").style.display = "flex";
+    await carregarDadosIniciais();
+    renderAll();
+    document.getElementById("appLoader").style.display = "none";
+  } else {
+    showLoginScreen();
+  }
+});

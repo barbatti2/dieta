@@ -91,6 +91,22 @@
     <!-- toast de confirmação -->
     <div id="toast" class="toast bg-[#1C1C1E] border border-[#2A2A2C] text-white text-xs font-bold px-4 py-2.5 rounded-full shadow-lg"></div>
 
+    <!-- tela de login (senha única do app) -->
+    <div id="loginScreen" class="absolute inset-0 z-[1000] flex-col items-center justify-center px-8" style="background:#0A0A0B; display:none;">
+      <div class="w-full max-w-[280px] mx-auto text-center">
+        <h1 class="font-serif text-clay text-3xl font-medium mb-1">Treinos</h1>
+        <p class="text-[11px] text-gray-500 uppercase tracking-[0.2em] mb-8">Acesso privado</p>
+        <form id="loginForm" class="space-y-3">
+          <input id="loginPassword" type="password" placeholder="Senha" autocomplete="current-password"
+            class="w-full bg-[#141416] border border-hairline rounded-2xl px-4 py-3.5 text-center text-white font-bold tracking-widest outline-none focus:border-clay" />
+          <p id="loginError" class="text-[11px] font-bold text-clay uppercase tracking-wide hidden">Senha incorreta</p>
+          <button type="submit" id="loginSubmitBtn" class="w-full bg-clay text-white font-bold py-3.5 rounded-2xl hover:bg-[#b33e27] transition-all active:scale-[0.98]">
+            Entrar
+          </button>
+        </form>
+      </div>
+    </div>
+
     <!-- carregando dados do Firestore -->
     <div id="appLoader" class="absolute inset-0 z-[999] flex flex-col items-center justify-center gap-3" style="background:#0A0A0B;">
       <div class="w-8 h-8 border-2 border-clay border-t-transparent rounded-full animate-spin"></div>
@@ -110,6 +126,9 @@
           </button>
           <button class="profile-btn w-8 h-8 rounded-full overflow-hidden bg-[#1C1C1E] flex items-center justify-center" data-profile="parceira">
             <span class="text-white text-xs font-bold">R</span>
+          </button>
+          <button class="logout-btn w-7 h-7 rounded-full flex items-center justify-center text-gray-500 hover:text-clay flex-shrink-0 ml-0.5 border-l border-[#2A2A2C] pl-1.5">
+            <i data-lucide="log-out" class="text-xs"></i>
           </button>
         </div>
       </header>
@@ -150,6 +169,9 @@
           </button>
           <button class="profile-btn w-8 h-8 rounded-full overflow-hidden bg-[#1C1C1E] flex items-center justify-center" data-profile="parceira">
             <span class="text-white text-xs font-bold">R</span>
+          </button>
+          <button class="logout-btn w-7 h-7 rounded-full flex items-center justify-center text-gray-500 hover:text-clay flex-shrink-0 ml-0.5 border-l border-[#2A2A2C] pl-1.5">
+            <i data-lucide="log-out" class="text-xs"></i>
           </button>
         </div>
       </header>
@@ -329,6 +351,9 @@
           <button class="profile-btn w-8 h-8 rounded-full overflow-hidden bg-[#1C1C1E] flex items-center justify-center" data-profile="parceira">
             <span class="text-white text-xs font-bold">R</span>
           </button>
+          <button class="logout-btn w-7 h-7 rounded-full flex items-center justify-center text-gray-500 hover:text-clay flex-shrink-0 ml-0.5 border-l border-[#2A2A2C] pl-1.5">
+            <i data-lucide="log-out" class="text-xs"></i>
+          </button>
         </div>
       </header>
 
@@ -347,6 +372,9 @@
           </button>
           <button class="profile-btn w-8 h-8 rounded-full overflow-hidden bg-[#1C1C1E] flex items-center justify-center" data-profile="parceira">
             <span class="text-white text-xs font-bold">R</span>
+          </button>
+          <button class="logout-btn w-7 h-7 rounded-full flex items-center justify-center text-gray-500 hover:text-clay flex-shrink-0 ml-0.5 border-l border-[#2A2A2C] pl-1.5">
+            <i data-lucide="log-out" class="text-xs"></i>
           </button>
         </div>
       </header>

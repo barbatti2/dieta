@@ -16,3 +16,6 @@ const firebaseConfig = {
 
 export const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
+// a autenticação (login por senha única) é montada no app.js, que importa
+// `app` daqui e chama getAuth(app) — deixamos só um app/db aqui pra não
+// duplicar a inicialização do Firebase.
