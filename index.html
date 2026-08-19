@@ -91,6 +91,12 @@
     <!-- toast de confirmação -->
     <div id="toast" class="toast bg-[#1C1C1E] border border-[#2A2A2C] text-white text-xs font-bold px-4 py-2.5 rounded-full shadow-lg"></div>
 
+    <!-- carregando dados do Firestore -->
+    <div id="appLoader" class="absolute inset-0 z-[999] flex flex-col items-center justify-center gap-3" style="background:#0A0A0B;">
+      <div class="w-8 h-8 border-2 border-clay border-t-transparent rounded-full animate-spin"></div>
+      <p class="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Carregando seus dados</p>
+    </div>
+
     <!-- ===================== HOJE ===================== -->
     <section class="screen active" data-screen="hoje">
       <header class="flex-shrink-0 px-6 pt-12 pb-2 flex justify-between items-start">
@@ -202,6 +208,7 @@
         </div>
         <h1 class="font-serif text-clay text-[26px] leading-[0.95]" id="execName">Agachamento Livre</h1>
         <span class="inline-block mt-2 bg-clay text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full" id="execGroupTag">Perna</span>
+        <p class="mt-2 text-[11px] font-bold text-gray-500 uppercase tracking-wide" id="execMeta">Meta: 3× 10 reps · Descanso 60s</p>
       </header>
 
       <main class="flex-1 min-h-0 overflow-y-auto px-6 pb-6 space-y-3">

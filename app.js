@@ -2,8 +2,12 @@ import createBodyHighlighter from 'https://esm.sh/body-highlighter';
 import { EXERCISES, GROUPS } from './exercises.js';
 
 /* =========================================================
-   DADOS FAKE — isso tudo depois vira leitura/escrita no Firestore
-   (o catálogo de exercícios agora mora em exercises.js)
+   DADOS — perfis e fichas de treino vêm do Firestore (ver
+   carregarDadosIniciais() lá embaixo); os arrays/objetos abaixo são
+   só os valores padrão usados na primeira vez que o app roda (quando
+   ainda não existe nada salvo no banco) e também o "formato" que o
+   resto do código espera.
+   (o catálogo de exercícios continua fixo, em exercises.js)
    ========================================================= */
 
 const backMuscles = ["trapezius", "upper-back", "lower-back", "triceps", "back-deltoids", "gluteal", "hamstring"];
@@ -19,10 +23,55 @@ const muscleLabels = {
 const WEEKDAY_LABELS = ["D", "S", "T", "Q", "Q", "S", "S"];
 const WEEKDAY_FULL = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 
+// cada exercício de uma ficha agora carrega sua própria configuração de
+// séries/repetições/descanso — não é mais só o id do exercício.
+// reps pode ser um número (mesma rep em todas as séries) ou um array
+// (uma rep diferente por série, ex: [12, 10, 8])
+function exCfg(id, series, reps, descanso) {
+  return { id, series, reps, descanso };
+}
+
+// reps aceita tanto um número (mesma rep em todas as séries) quanto um
+// array (uma rep por série, ex: "12+10+8"). essas funções convertem entre
+// o texto que o usuário digita no editor e esse formato de dado.
+function parseRepsInput(str) {
+  const parts = String(str).split("+").map(s => s.trim()).filter(Boolean).map(Number).filter(n => !isNaN(n) && n >= 0);
+  if (parts.length === 0) return 10;
+  if (parts.length === 1) return parts[0];
+  return parts;
+}
+function repsToInputValue(reps) {
+  return Array.isArray(reps) ? reps.join("+") : String(reps);
+}
+function repsResumo(series, reps) {
+  return Array.isArray(reps) ? `${reps.join("+")} reps` : `${series}× ${reps} reps`;
+}
+
 const TEMPLATES = [
-  { id: "a", nome: "Peito e Tríceps", ficha: "Ficha A", tags: ["Peitoral", "Tríceps", "Ombros"], dias: [1, 4], exercicios: ["supino_reto_barra", "supino_inclinado_halteres", "crucifixo_reto_halteres", "desenvolvimento_halteres", "triceps_corda", "mergulho_banco"] },
-  { id: "b", nome: "Costas e Bíceps", ficha: "Ficha B", tags: ["Dorsais", "Bíceps", "Antebraço"], dias: [2, 5], exercicios: ["puxada_frente", "remada_curvada_barra", "remada_baixa_cabo", "rosca_direta_barra", "rosca_martelo", "rosca_scott"] },
-  { id: "c", nome: "Pernas e Glúteos", ficha: "Ficha C", tags: ["Quadríceps", "Posterior", "Glúteos"], dias: [3, 6], exercicios: ["agachamento_livre", "leg_press", "cadeira_extensora", "cadeira_flexora", "elevacao_pelvica", "panturrilha_em_pe"] }
+  { id: "a", nome: "Peito e Tríceps", ficha: "Ficha A", tags: ["Peitoral", "Tríceps", "Ombros"], dias: [1, 4], exercicios: [
+    exCfg("supino_reto_barra", 4, 10, 60),
+    exCfg("supino_inclinado_halteres", 3, 10, 60),
+    exCfg("crucifixo_reto_halteres", 3, 12, 45),
+    exCfg("desenvolvimento_halteres", 3, 10, 60),
+    exCfg("triceps_corda", 3, 12, 45),
+    exCfg("mergulho_banco", 3, 12, 45)
+  ] },
+  { id: "b", nome: "Costas e Bíceps", ficha: "Ficha B", tags: ["Dorsais", "Bíceps", "Antebraço"], dias: [2, 5], exercicios: [
+    exCfg("puxada_frente", 4, 10, 60),
+    exCfg("remada_curvada_barra", 3, 10, 60),
+    exCfg("remada_baixa_cabo", 3, 12, 45),
+    exCfg("rosca_direta_barra", 3, 10, 45),
+    exCfg("rosca_martelo", 3, 12, 45),
+    exCfg("rosca_scott", 3, 12, 45)
+  ] },
+  { id: "c", nome: "Pernas e Glúteos", ficha: "Ficha C", tags: ["Quadríceps", "Posterior", "Glúteos"], dias: [3, 6], exercicios: [
+    exCfg("agachamento_livre", 4, 10, 90),
+    exCfg("leg_press", 4, 12, 60),
+    exCfg("cadeira_extensora", 3, 12, 45),
+    exCfg("cadeira_flexora", 3, 12, 45),
+    exCfg("elevacao_pelvica", 3, 12, 60),
+    exCfg("panturrilha_em_pe", 4, 15, 30)
+  ] }
 ];
 
 const PROFILES = {
@@ -51,6 +100,74 @@ const PROFILES = {
 const HOJE_DIA = 16; // dia fake usado como "hoje" nos dados de exemplo
 
 /* =========================================================
+   FIRESTORE — perfis (voce/parceira) ficam em profiles/{id},
+   fichas de treino ficam em templates/{id}
+   ========================================================= */
+
+import { db } from './firebase-config.js';
+import {
+  doc, getDoc, setDoc, getDocs, deleteDoc, collection, writeBatch
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+// salva o perfil inteiro (streak, dias treinados, execução em andamento, etc)
+async function saveProfile(profileId) {
+  try {
+    await setDoc(doc(db, "profiles", profileId), PROFILES[profileId]);
+  } catch (err) {
+    console.error("Não foi possível salvar o perfil no Firestore:", err);
+    showToast("Sem conexão — alteração não foi salva");
+  }
+}
+
+// salva uma ficha de treino inteira (nome, dias, exercícios com séries/reps/descanso)
+async function saveTemplate(t) {
+  try {
+    await setDoc(doc(db, "templates", t.id), t);
+  } catch (err) {
+    console.error("Não foi possível salvar a ficha no Firestore:", err);
+    showToast("Sem conexão — treino não foi salvo");
+  }
+}
+
+async function deleteTemplateRemote(id) {
+  try {
+    await deleteDoc(doc(db, "templates", id));
+  } catch (err) {
+    console.error("Não foi possível excluir a ficha no Firestore:", err);
+  }
+}
+
+// roda uma única vez, no carregamento do app: busca tudo que já existe no
+// Firestore. Se for a primeira vez (banco vazio), semeia com os dados
+// padrão acima para não começar com o app em branco.
+async function carregarDadosIniciais() {
+  try {
+    const templatesSnap = await getDocs(collection(db, "templates"));
+    if (templatesSnap.empty) {
+      const batch = writeBatch(db);
+      TEMPLATES.forEach(t => batch.set(doc(db, "templates", t.id), t));
+      await batch.commit();
+    } else {
+      TEMPLATES.length = 0;
+      templatesSnap.forEach(docSnap => TEMPLATES.push(docSnap.data()));
+    }
+
+    for (const profileId of Object.keys(PROFILES)) {
+      const ref = doc(db, "profiles", profileId);
+      const snap = await getDoc(ref);
+      if (snap.exists()) {
+        Object.assign(PROFILES[profileId], snap.data());
+      } else {
+        await setDoc(ref, PROFILES[profileId]);
+      }
+    }
+  } catch (err) {
+    console.error("Não foi possível conectar ao Firestore — usando dados padrão localmente:", err);
+    showToast("Sem conexão com o banco — usando dados locais");
+  }
+}
+
+/* =========================================================
    ESTADO
    ========================================================= */
 
@@ -72,6 +189,16 @@ function currentProfile() {
 function refreshIcons() {
   if (window.lucide) window.lucide.createIcons();
 }
+
+// evita disparar um save no Firestore a cada clique rápido nos steppers
+function debounce(fn, wait) {
+  let timer = null;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), wait);
+  };
+}
+const saveProfileDebounced = debounce((profileId) => saveProfile(profileId), 600);
 
 /* =========================================================
    TOAST (confirmação rápida)
@@ -186,6 +313,7 @@ function renderTodayWorkout() {
       btn.addEventListener("click", () => {
         p.hojeTemplateId = t.id;
         renderTodayWorkout();
+        saveProfile(state.perfilAtual);
       });
       picker.appendChild(btn);
     });
@@ -224,6 +352,7 @@ function renderTodayWorkout() {
       e.stopPropagation();
       p.hojeTemplateId = null;
       renderTodayWorkout();
+      saveProfile(state.perfilAtual);
     });
     refreshIcons();
     return;
@@ -252,6 +381,7 @@ function renderTodayWorkout() {
   document.getElementById("trocarTreinoBtn").addEventListener("click", () => {
     p.hojeTemplateId = null;
     renderTodayWorkout();
+    saveProfile(state.perfilAtual);
   });
   refreshIcons();
 }
@@ -274,6 +404,7 @@ function reabrirTreino(t) {
   p.hojeTemplateId = t.id;
   showScreen("execucao");
   renderExecucao();
+  saveProfile(state.perfilAtual);
 }
 
 function marcarDiaTreinado() {
@@ -376,6 +507,7 @@ function createNewTemplate() {
     exercicios: []
   };
   TEMPLATES.push(novo);
+  saveTemplate(novo);
   openEditor(novo.id);
 }
 document.getElementById("createTemplateBtn").addEventListener("click", createNewTemplate);
@@ -395,10 +527,15 @@ function renderEditorList() {
     list.appendChild(header);
 
     idsDoGrupo.forEach(([id, ex]) => {
-      const included = t.exercicios.includes(id);
+      const cfg = t.exercicios.find(e => e.id === id);
+      const included = !!cfg;
+
+      const wrap = document.createElement("div");
+      wrap.className = "mb-2";
+
       const row = document.createElement("button");
-      row.className = `w-full flex items-center justify-between gap-3 p-3.5 rounded-xl border transition-all text-left mb-2 ${
-        included ? "border-clay bg-claySoft/10" : "border-hairline bg-card"
+      row.className = `w-full flex items-center justify-between gap-3 p-3.5 rounded-xl border transition-all text-left ${
+        included ? "border-clay bg-claySoft/10 rounded-b-none border-b-0" : "border-hairline bg-card"
       }`;
       const musclesText = [...ex.primary, ...ex.secondary].map(m => muscleLabels[m] || m).join(", ");
       row.innerHTML = `
@@ -416,12 +553,71 @@ function renderEditorList() {
         </div>
       `;
       row.addEventListener("click", () => {
-        const idx = t.exercicios.indexOf(id);
+        const idx = t.exercicios.findIndex(e => e.id === id);
         if (idx >= 0) t.exercicios.splice(idx, 1);
-        else t.exercicios.push(id);
+        else t.exercicios.push(exCfg(id, 3, 10, 60));
         renderEditorList();
       });
-      list.appendChild(row);
+      wrap.appendChild(row);
+
+      // painel de séries / repetições / descanso — só aparece quando o
+      // exercício está incluído na ficha
+      if (included) {
+        const panel = document.createElement("div");
+        panel.className = "border border-t-0 border-clay bg-claySoft/10 rounded-b-xl px-3.5 py-3 flex flex-wrap items-center gap-x-5 gap-y-2";
+        panel.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Séries</span>
+            <button type="button" class="cfg-series-dir w-6 h-6 rounded-full bg-[#1C1C1E] border border-hairline text-white flex items-center justify-center text-xs" data-dir="-1">−</button>
+            <span class="w-4 text-center text-sm font-extrabold text-white cfg-series-val">${cfg.series}</span>
+            <button type="button" class="cfg-series-dir w-6 h-6 rounded-full bg-[#1C1C1E] border border-hairline text-white flex items-center justify-center text-xs" data-dir="1">+</button>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Reps</span>
+            <input type="text" class="cfg-reps-input w-20 bg-[#1C1C1E] border border-hairline rounded-md px-2 py-1 text-center text-sm font-extrabold text-white outline-none focus:border-clay" value="${repsToInputValue(cfg.reps)}" placeholder="10 ou 12+10+8">
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Descanso</span>
+            <button type="button" class="cfg-rest-dir w-6 h-6 rounded-full bg-[#1C1C1E] border border-hairline text-white flex items-center justify-center text-xs" data-dir="-1">−</button>
+            <span class="w-9 text-center text-sm font-extrabold text-white cfg-rest-val">${cfg.descanso}s</span>
+            <button type="button" class="cfg-rest-dir w-6 h-6 rounded-full bg-[#1C1C1E] border border-hairline text-white flex items-center justify-center text-xs" data-dir="1">+</button>
+          </div>
+        `;
+
+        panel.querySelectorAll(".cfg-series-dir").forEach(b => {
+          b.addEventListener("click", () => {
+            const dir = parseInt(b.dataset.dir, 10);
+            cfg.series = Math.max(1, cfg.series + dir);
+            // se as reps já são customizadas por série, mantém o array do
+            // mesmo tamanho que o número de séries
+            if (Array.isArray(cfg.reps)) {
+              const last = cfg.reps[cfg.reps.length - 1] ?? 10;
+              while (cfg.reps.length < cfg.series) cfg.reps.push(last);
+              while (cfg.reps.length > cfg.series) cfg.reps.pop();
+            }
+            renderEditorList();
+          });
+        });
+
+        panel.querySelectorAll(".cfg-rest-dir").forEach(b => {
+          b.addEventListener("click", () => {
+            const dir = parseInt(b.dataset.dir, 10);
+            cfg.descanso = Math.max(0, cfg.descanso + dir * 15);
+            renderEditorList();
+          });
+        });
+
+        const repsInput = panel.querySelector(".cfg-reps-input");
+        repsInput.addEventListener("change", () => {
+          cfg.reps = parseRepsInput(repsInput.value);
+          if (Array.isArray(cfg.reps)) cfg.series = cfg.reps.length;
+          renderEditorList();
+        });
+
+        wrap.appendChild(panel);
+      }
+
+      list.appendChild(wrap);
     });
   });
   refreshIcons();
@@ -429,19 +625,22 @@ function renderEditorList() {
 
 document.getElementById("editorBackBtn").addEventListener("click", () => showScreen("treinos"));
 document.getElementById("editorSaveBtn").addEventListener("click", () => {
-  // aqui entraria o salvamento real (Firestore) do template atualizado
+  const t = TEMPLATES.find(x => x.id === editorTemplateId);
   renderTemplateList();
   renderHoje();
   showToast("Treino salvo!");
   showScreen("treinos");
+  saveTemplate(t);
 });
 document.getElementById("editorDeleteBtn").addEventListener("click", () => {
   if (!confirm("Excluir esta ficha de treino?")) return;
-  const idx = TEMPLATES.findIndex(t => t.id === editorTemplateId);
+  const idToDelete = editorTemplateId;
+  const idx = TEMPLATES.findIndex(t => t.id === idToDelete);
   if (idx >= 0) TEMPLATES.splice(idx, 1);
   renderTemplateList();
   renderHoje();
   showScreen("treinos");
+  deleteTemplateRemote(idToDelete);
 });
 
 /* =========================================================
@@ -465,14 +664,18 @@ function startExecution(templateId) {
   }
   showScreen("execucao");
   renderExecucao();
+  saveProfile(state.perfilAtual);
 }
 
 function currentTemplate() {
   return TEMPLATES.find(t => t.id === currentProfile().execucao.templateId);
 }
+function currentExercicioCfg() {
+  return currentTemplate().exercicios[currentProfile().execucao.exercicioIndex];
+}
 function currentExercise() {
-  const exId = currentTemplate().exercicios[currentProfile().execucao.exercicioIndex];
-  return { id: exId, ...EXERCISES[exId] };
+  const cfg = currentExercicioCfg();
+  return { id: cfg.id, ...EXERCISES[cfg.id] };
 }
 
 function renderExecucao() {
@@ -490,6 +693,9 @@ function renderExecucao() {
 
   const grupo = GROUPS.find(g => g.id === ex.grupo);
   document.getElementById("execGroupTag").textContent = grupo ? grupo.nome : "";
+
+  const cfg = currentExercicioCfg();
+  document.getElementById("execMeta").textContent = `Meta: ${repsResumo(cfg.series, cfg.reps)} · Descanso ${cfg.descanso}s`;
 
   const img = document.getElementById("execImage");
   img.src = ex.imagem || "";
@@ -596,6 +802,7 @@ document.querySelectorAll(".stepper").forEach(btn => {
     if (target === "reps") ec.reps = Math.max(0, ec.reps + dir);
     document.getElementById("weightValue").textContent = ec.weight;
     document.getElementById("repsValue").textContent = ec.reps;
+    saveProfileDebounced(state.perfilAtual);
   });
 });
 
@@ -604,6 +811,7 @@ document.getElementById("prevExBtn").addEventListener("click", () => {
   if (ec.exercicioIndex > 0) {
     ec.exercicioIndex--;
     renderExecucao();
+    saveProfile(state.perfilAtual);
   }
 });
 
@@ -620,10 +828,10 @@ document.getElementById("mainExecBtn").addEventListener("click", () => {
   if (!isLast) {
     ec.exercicioIndex++;
     renderExecucao();
+    saveProfile(state.perfilAtual);
     return;
   }
 
-  // aqui entraria o salvamento real (Firestore) do treino concluído
   const p = currentProfile();
   if (!p.concluidosHoje.includes(t.id)) p.concluidosHoje.push(t.id);
   registrarNoHistorico({
@@ -640,6 +848,7 @@ document.getElementById("mainExecBtn").addEventListener("click", () => {
   renderHistorico();
   showToast("Treino concluído!");
   showScreen("hoje");
+  saveProfile(state.perfilAtual);
 });
 
 document.getElementById("execCloseBtn").addEventListener("click", () => {
@@ -694,7 +903,6 @@ document.getElementById("confirmCardioBtn").addEventListener("click", () => {
   const minutos = document.getElementById("cardioMinValue").textContent;
   const cardioLabels = { esteira: "Esteira", bike: "Bike", eliptico: "Elíptico", outro: "Outra atividade" };
   const intensidadeLabels = { leve: "Leve", moderado: "Moderado", forte: "Forte" };
-  // aqui entraria o salvamento real (Firestore)
   p.cardioLog.push({ tipo: state.cardioTipo, minutos, intensidade: state.cardioIntensidade, dia: HOJE_DIA });
   registrarNoHistorico({
     tipo: "cardio",
@@ -707,6 +915,7 @@ document.getElementById("confirmCardioBtn").addEventListener("click", () => {
   renderHistorico();
   showToast("Cardio salvo!");
   showScreen("hoje");
+  saveProfile(state.perfilAtual);
 });
 
 /* =========================================================
@@ -849,6 +1058,7 @@ function renderHistorico() {
       if (!confirm(`Excluir "${item.nome}" do histórico?`)) return;
       p.historicoLog.splice(idx, 1);
       renderHistorico();
+      saveProfile(state.perfilAtual);
     });
 
     list.appendChild(card);
@@ -868,4 +1078,14 @@ function renderAll() {
   renderCalendario();
 }
 
-renderAll();
+/* =========================================================
+   INICIALIZAÇÃO — busca tudo no Firestore antes da primeira
+   renderização (com uma telinha de carregamento nesse meio tempo)
+   ========================================================= */
+
+(async () => {
+  await carregarDadosIniciais();
+  renderAll();
+  const loader = document.getElementById("appLoader");
+  if (loader) loader.remove();
+})();
