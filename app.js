@@ -308,7 +308,7 @@ function renderTemplateList() {
       <div class="flex items-center justify-between gap-3">
         <div class="min-w-0 flex-1 cursor-pointer template-open">
           <span class="text-[9px] font-bold text-clay uppercase tracking-[0.15em]">${t.ficha}</span>
-          <h3 class="font-serif text-base font-medium truncate">${t.nome}</h3>
+          <h3 class="text-base font-extrabold text-white uppercase tracking-tight truncate">${t.nome}</h3>
           <p class="text-[11px] text-muted mt-0.5">${t.exercicios.length} exercícios · ${diasTexto}</p>
         </div>
         <div class="flex items-center gap-1.5 flex-shrink-0">
@@ -406,7 +406,7 @@ function renderEditorList() {
           <img src="${ex.imagem || ""}" alt="" class="w-full h-full object-cover">
         </div>
         <div class="min-w-0 flex-1">
-          <p class="text-sm font-bold truncate">${ex.nome}</p>
+          <p class="text-sm font-extrabold uppercase tracking-tight truncate">${ex.nome}</p>
           <p class="text-[11px] text-muted truncate">${musclesText} · ${ex.equipamento}</p>
         </div>
         <div class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
@@ -815,7 +815,7 @@ function renderHistorico() {
           <i data-lucide="${item.tipo === "treino" ? "dumbbell" : "footprints"}" class="text-xs"></i>
         </div>
         <div class="min-w-0 flex-1">
-          <p class="text-sm font-bold truncate">${item.nome}</p>
+          <p class="text-sm font-extrabold uppercase tracking-tight truncate">${item.nome}</p>
           <p class="text-[11px] text-muted truncate">${item.detalhe || ""}</p>
         </div>
       </button>
