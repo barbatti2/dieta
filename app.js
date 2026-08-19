@@ -82,6 +82,7 @@ const PROFILES = {
     historicoLog: [],
     concluidosPorDia: {}, // { "AAAA-MM-DD": ["a", "b"] } — quais fichas foram concluídas em cada dia
     hojeTemplateIds: [], // todas as fichas (A/B/C...) que esse perfil escolheu (ou o app sugeriu) como treinos de hoje
+    hojeAutoIds: [], // subconjunto de hojeTemplateIds que veio da sugestão automática (por dia da semana) — usado só pra saber o que pode ser removido sozinho se a programação mudar
     hojeTemplateDia: null, // "AAAA-MM-DD" do dia em que hojeTemplateIds foi definido — vira a chave pra saber se precisa reavaliar a sugestão do dia
     execucao: null // treino em andamento desse perfil (independente do outro perfil)
   },
@@ -92,6 +93,7 @@ const PROFILES = {
     historicoLog: [],
     concluidosPorDia: {},
     hojeTemplateIds: [],
+    hojeAutoIds: [],
     hojeTemplateDia: null,
     execucao: null
   }
@@ -188,6 +190,7 @@ function normalizeProfile(p) {
     p.hojeTemplateIds = [p.hojeTemplateId];
   }
   if (!Array.isArray(p.hojeTemplateIds)) p.hojeTemplateIds = [];
+  if (!Array.isArray(p.hojeAutoIds)) p.hojeAutoIds = [];
   delete p.hojeTemplateId;
   delete p.concluidosHoje;
   delete p.streak;
@@ -304,7 +307,10 @@ function showScreen(name) {
 }
 
 document.querySelectorAll(".nav-item").forEach(btn => {
-  btn.addEventListener("click", () => showScreen(btn.dataset.nav));
+  btn.addEventListener("click", () => {
+    if (btn.dataset.nav === "hoje") renderHoje();
+    showScreen(btn.dataset.nav);
+  });
 });
 
 /* =========================================================
@@ -373,22 +379,56 @@ function renderTodayWorkout() {
   const titleEl = document.getElementById("todayWorkoutTitle");
 
   // virou o dia desde a última vez que os treinos foram definidos/sugeridos:
-  // esquece a escolha antiga pra reavaliar com base na programação de hoje
+  // esquece a escolha antiga pra reavaliar do zero com base na programação de hoje
   if (p.hojeTemplateIds.length && p.hojeTemplateDia !== todayStr()) {
     p.hojeTemplateIds = [];
+    p.hojeAutoIds = [];
     p.hojeTemplateDia = null;
   }
+  if (!Array.isArray(p.hojeAutoIds)) p.hojeAutoIds = [];
 
-  // ninguém escolheu manualmente ainda e não estamos no meio de uma troca:
-  // tenta sugerir com base no dia da semana programado em cada ficha (aba
-  // "treinos") — junta TODAS as fichas que batem com o dia de hoje, não só
-  // a primeira encontrada
-  if (!p.hojeTemplateIds.length && !state.escolhaManual) {
-    const sugestoes = getTreinosDoDiaAtual();
-    if (sugestoes.length) {
-      p.hojeTemplateIds = sugestoes.map(t => t.id);
+  // reavalia a programação de hoje a cada render (não só quando a lista
+  // está vazia): assim, se o usuário marcar/desmarcar o dia de hoje em
+  // alguma ficha lá no menu Treinos, a tela "Hoje" acompanha na hora, sem
+  // ficar "grudada" na primeira sugestão do dia. Só entra aqui fora do modo
+  // de troca manual, pra não atrapalhar o usuário no meio de uma escolha.
+  if (!state.escolhaManual) {
+    const sugestoes = getTreinosDoDiaAtual().map(t => t.id);
+    const concluidosHoje = p.concluidosPorDia[todayStr()] || [];
+    let mudou = false;
+
+    // soma fichas recém-programadas pra hoje que ainda não estão na lista
+    sugestoes.forEach(id => {
+      if (!p.hojeTemplateIds.includes(id)) {
+        p.hojeTemplateIds.push(id);
+        p.hojeAutoIds.push(id);
+        mudou = true;
+      }
+    });
+
+    // tira da lista as fichas que eram sugestão automática, deixaram de
+    // estar programadas pra hoje, e ainda não foram concluídas nem estão
+    // em andamento (essas nunca são removidas automaticamente); fichas
+    // que o usuário escolheu manualmente também não são removidas aqui,
+    // só se ele quiser trocar/tirar pela própria tela
+    p.hojeTemplateIds = p.hojeTemplateIds.filter(id => {
+      const eraAuto = p.hojeAutoIds.includes(id);
+      const aindaProgramada = sugestoes.includes(id);
+      const concluida = concluidosHoje.includes(id);
+      const emAndamento = p.execucao && p.execucao.templateId === id;
+      if (eraAuto && !aindaProgramada && !concluida && !emAndamento) {
+        mudou = true;
+        return false;
+      }
+      return true;
+    });
+    p.hojeAutoIds = p.hojeAutoIds.filter(id => p.hojeTemplateIds.includes(id));
+
+    if (mudou) {
       p.hojeTemplateDia = todayStr();
       saveProfile(state.perfilAtual);
+    } else if (p.hojeTemplateIds.length && !p.hojeTemplateDia) {
+      p.hojeTemplateDia = todayStr();
     }
   }
 
@@ -462,6 +502,7 @@ function renderTodayWorkout() {
   const validos = p.hojeTemplateIds.filter(id => TEMPLATES.some(t => t.id === id));
   if (validos.length !== p.hojeTemplateIds.length) {
     p.hojeTemplateIds = validos;
+    p.hojeAutoIds = (p.hojeAutoIds || []).filter(id => validos.includes(id));
     saveProfile(state.perfilAtual);
     if (!validos.length) {
       renderTodayWorkout();
@@ -819,7 +860,13 @@ function renderEditorList() {
   refreshIcons();
 }
 
-document.getElementById("editorBackBtn").addEventListener("click", () => showScreen("treinos"));
+document.getElementById("editorBackBtn").addEventListener("click", () => {
+  const t = TEMPLATES.find(x => x.id === editorTemplateId);
+  if (t) saveTemplate(t);
+  renderTemplateList();
+  renderHoje();
+  showScreen("treinos");
+});
 document.getElementById("editorSaveBtn").addEventListener("click", () => {
   const t = TEMPLATES.find(x => x.id === editorTemplateId);
   renderTemplateList();
