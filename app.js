@@ -1565,6 +1565,15 @@ function hideLoginScreen() {
   document.getElementById("loginScreen").style.display = "none";
 }
 
+document.getElementById("togglePasswordBtn").addEventListener("click", () => {
+  const input = document.getElementById("loginPassword");
+  const icon = document.querySelector("#togglePasswordBtn i");
+  const showing = input.type === "text";
+  input.type = showing ? "password" : "text";
+  icon.setAttribute("data-lucide", showing ? "eye" : "eye-off");
+  if (window.lucide) lucide.createIcons();
+});
+
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const btn = document.getElementById("loginSubmitBtn");
