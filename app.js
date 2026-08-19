@@ -98,7 +98,7 @@ function showScreen(name) {
     const active = b.dataset.nav === name;
     b.classList.toggle("text-clay", active);
     b.classList.toggle("bg-clay/10", active);
-    b.classList.toggle("text-muted", !active);
+    b.classList.toggle("text-gray-500", !active);
     b.classList.toggle("nav-item-active", active);
   });
   // esconde o menu inferior em telas de "fluxo" (execução, editor) — só aparece nas 5 abas principais
@@ -143,13 +143,15 @@ function renderHoje() {
   for (let i = 6; i >= 0; i--) {
     const dayNum = HOJE_DIA - i;
     const trained = p.diasTreinados.includes(dayNum);
+    const isToday = dayNum === HOJE_DIA;
+    const highlight = trained || isToday;
     const el = document.createElement("div");
     el.className = "flex flex-col items-center gap-2";
     el.innerHTML = `
-      <span class="text-[9px] font-bold text-muted uppercase">${WEEKDAY_LABELS[dayNum % 7]}</span>
-      <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs shadow-sm ${
-        trained ? "bg-clay text-white" : "border border-hairline bg-paper text-hairline"
-      }">${trained ? '<i data-lucide="check"></i>' : ""}</div>
+      <span class="text-[10px] font-bold uppercase ${isToday ? "text-clay" : "text-gray-500"}">${WEEKDAY_LABELS[dayNum % 7]}</span>
+      <div class="weekday-pill ${highlight ? "trained" : ""} rounded-full flex items-start justify-center pt-1.5 transition-all" style="width:32px;height:${isToday ? "72px" : "58px"};">
+        <div class="rounded-full flex-shrink-0" style="width:18px;height:18px;background:${highlight ? "#fff" : "#3A3A3C"};"></div>
+      </div>
     `;
     strip.appendChild(el);
   }
@@ -163,22 +165,18 @@ function renderTodayWorkout() {
 
   // ainda não escolheu qual ficha é o treino de hoje: mostra o seletor
   if (!p.hojeTemplateId) {
-    container.innerHTML = `
-      <div class="bg-card border border-hairline rounded-2xl p-4 shadow-sm">
-        <p class="text-[10px] font-bold text-clay uppercase tracking-[0.2em] mb-3">Qual treino de hoje?</p>
-        <div class="flex flex-col gap-2" id="hojeTemplatePicker"></div>
-      </div>
-    `;
+    container.innerHTML = `<div class="flex flex-col gap-3" id="hojeTemplatePicker"></div>`;
     const picker = document.getElementById("hojeTemplatePicker");
-    TEMPLATES.forEach(t => {
+    TEMPLATES.forEach((t, idx) => {
       const btn = document.createElement("button");
-      btn.className = "today-pick-btn w-full flex items-center gap-3 bg-paper border border-hairline rounded-xl p-3 text-left hover:border-clay/40 transition-all active:scale-[0.98]";
+      btn.className = "today-pick-btn ficha-card w-full flex items-center gap-4 rounded-2xl p-4 text-left transition-all active:scale-[0.98]";
       btn.innerHTML = `
-        <div class="w-9 h-9 bg-card rounded-lg flex items-center justify-center text-clay flex-shrink-0"><i data-lucide="dumbbell" class="text-xs"></i></div>
-        <div class="min-w-0">
-          <span class="text-[9px] font-bold text-clay uppercase tracking-[0.15em]">${t.ficha}</span>
-          <h3 class="font-serif text-sm font-medium truncate">${t.nome}</h3>
+        <span class="font-serif text-2xl text-gray-600" style="min-width:30px;">${String(idx + 1).padStart(2, "0")}</span>
+        <div class="min-w-0 flex-1">
+          <p class="text-[10px] font-bold text-clay uppercase tracking-[0.15em] mb-0.5">${t.ficha}</p>
+          <h3 class="text-sm font-extrabold text-white uppercase tracking-tight truncate">${t.nome}</h3>
         </div>
+        <i data-lucide="chevron-right" class="text-clay flex-shrink-0"></i>
       `;
       btn.addEventListener("click", () => {
         p.hojeTemplateId = t.id;
@@ -204,13 +202,13 @@ function renderTodayWorkout() {
 
   if (concluido) {
     container.innerHTML = `
-      <button id="reabrirTreinoBtn" class="w-full bg-emerald/5 border border-emerald/30 rounded-2xl p-4 flex items-center gap-3 text-left hover:border-emerald/60 transition-all active:scale-[0.98]">
+      <button id="reabrirTreinoBtn" class="w-full rounded-2xl p-4 flex items-center gap-3 text-left transition-all active:scale-[0.98]" style="background:#101913;border:1px solid #234032;">
         <div class="w-9 h-9 bg-emerald rounded-full flex items-center justify-center text-white flex-shrink-0">
           <i data-lucide="check" class="text-xs"></i>
         </div>
         <div class="min-w-0 flex-1">
           <span class="text-[10px] font-bold text-emerald uppercase tracking-[0.15em]">${t.ficha} · Concluído</span>
-          <h3 class="font-serif text-base font-medium truncate">${t.nome}</h3>
+          <h3 class="text-base font-extrabold text-white truncate">${t.nome}</h3>
         </div>
         <i data-lucide="rotate-ccw" class="text-emerald text-sm flex-shrink-0"></i>
       </button>
@@ -227,21 +225,21 @@ function renderTodayWorkout() {
   }
 
   container.innerHTML = `
-    <div class="bg-card border border-hairline rounded-2xl p-4 shadow-sm">
+    <div class="ficha-card rounded-2xl p-4">
       <div class="flex items-center justify-between mb-3">
         <div>
           <span class="text-[10px] font-bold text-clay uppercase tracking-[0.2em]">${t.ficha}</span>
-          <h3 class="font-serif text-lg font-medium">${t.nome}</h3>
-          ${emAndamento ? `<p class="text-[11px] text-muted mt-0.5">Exercício ${p.execucao.exercicioIndex + 1} de ${t.exercicios.length}</p>` : ""}
+          <h3 class="text-lg font-extrabold text-white uppercase tracking-tight">${t.nome}</h3>
+          ${emAndamento ? `<p class="text-[11px] text-gray-500 mt-0.5">Exercício ${p.execucao.exercicioIndex + 1} de ${t.exercicios.length}</p>` : ""}
         </div>
-        <div class="w-10 h-10 bg-paper rounded-xl flex items-center justify-center text-clay flex-shrink-0">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center text-clay flex-shrink-0" style="background:#1C1C1E;">
           <i data-lucide="dumbbell"></i>
         </div>
       </div>
-      <button class="start-today-btn w-full bg-ink text-white font-medium py-2.5 rounded-xl text-sm active:scale-[0.98] transition-all" data-template-id="${t.id}">
+      <button class="start-today-btn w-full bg-clay text-white font-bold py-2.5 rounded-xl text-sm active:scale-[0.98] transition-all" data-template-id="${t.id}">
         ${emAndamento ? "Continuar Treino" : "Iniciar Treino"}
       </button>
-      <button id="trocarTreinoBtn" class="mt-2 w-full text-xs font-bold text-muted uppercase tracking-widest py-1">Escolher outro treino</button>
+      <button id="trocarTreinoBtn" class="mt-2 w-full text-xs font-bold text-gray-500 uppercase tracking-widest py-1">Escolher outro treino</button>
     </div>
   `;
 

@@ -71,6 +71,25 @@
        os ícones ao trocar de aba */
     .nav-label { max-width: 0; opacity: 0; margin-left: 0; }
     .nav-item-active .nav-label { max-width: 100px; opacity: 1; margin-left: 0.375rem; }
+
+    /* ===== tema escuro só da tela "Hoje" (o menu inferior não é alterado) ===== */
+    section[data-screen="hoje"] { background: #0A0A0B; }
+    section[data-screen="hoje"] header { background: #0A0A0B; }
+    section[data-screen="hoje"] .profile-toggle { background: #141416; border-color: #232326; }
+    section[data-screen="hoje"] .profile-btn.active { box-shadow: 0 0 0 2px #C9482F, 0 0 0 4px #141416; }
+
+    .streak-ring {
+      background:
+        conic-gradient(from -100deg, #FF6B3D 0deg 16deg, transparent 16deg 360deg),
+        repeating-conic-gradient(from 0deg, #313134 0deg 1.1deg, transparent 1.1deg 7deg);
+    }
+    .weekday-pill { background: #1C1C1E; }
+    .weekday-pill.trained, .weekday-pill.today {
+      background: linear-gradient(180deg, #FF6B3D, #C9482F);
+      box-shadow: 0 6px 16px -4px rgba(201,72,47,.55);
+    }
+    .ficha-card { background: #141416; border: 1px solid #232326; }
+    .ficha-card:active { border-color: #C9482F; }
   </style>
 </head>
 <body class="bg-paper sm:bg-[#EDE8DF] text-ink font-sans antialiased min-h-screen flex items-center justify-center sm:py-6">
@@ -82,12 +101,12 @@
 
     <!-- ===================== HOJE ===================== -->
     <section class="screen active" data-screen="hoje">
-      <header class="flex-shrink-0 px-6 pt-12 pb-4 flex justify-between items-center bg-paper">
+      <header class="flex-shrink-0 px-6 pt-12 pb-2 flex justify-between items-start">
         <div>
-          <p class="text-[10px] uppercase tracking-[0.2em] text-muted mb-0.5" id="todayDate">Segunda, 14 Out</p>
-          <h1 class="font-serif text-2xl font-medium">Hoje</h1>
+          <h1 class="font-serif text-clay text-3xl font-medium">Hoje</h1>
+          <p class="text-[10px] uppercase tracking-[0.2em] text-gray-500 mt-1" id="todayDate">Segunda, 14 Out</p>
         </div>
-        <div class="profile-toggle flex items-center bg-white border border-hairline p-1 rounded-full shadow-sm gap-1">
+        <div class="profile-toggle flex items-center border p-1 rounded-full shadow-sm gap-1">
           <button class="profile-btn w-8 h-8 rounded-full overflow-hidden bg-ink flex items-center justify-center" data-profile="voce">
             <span class="text-white text-xs font-bold">G</span>
           </button>
@@ -97,25 +116,28 @@
         </div>
       </header>
 
-      <main class="flex-1 min-h-0 overflow-y-auto px-6 pb-8 space-y-4">
-        <section class="space-y-3">
-          <h2 class="text-[10px] font-bold text-muted uppercase tracking-[0.2em] px-1">Últimos 7 dias</h2>
-          <div class="bg-card border border-hairline rounded-2xl p-4 shadow-sm flex justify-between items-center" id="weekStrip"></div>
-        </section>
-
-        <section class="bg-clay text-white rounded-2xl px-5 py-4 shadow-sm flex items-center justify-center gap-3">
-          <i data-lucide="flame" class="text-base opacity-80"></i>
-          <div class="text-center">
-            <p class="text-[9px] uppercase tracking-[0.15em] opacity-70 mb-0.5">Sequência de treinos</p>
-            <div class="flex items-baseline gap-1.5 justify-center">
-              <span class="font-serif text-2xl font-medium leading-none" id="streakCount">12</span>
-              <span class="text-xs font-medium opacity-80">dias seguidos treinando</span>
+      <main class="flex-1 min-h-0 overflow-y-auto px-6 pb-8 space-y-8">
+        <section class="flex justify-center pt-2">
+          <div class="relative" style="width:212px;height:212px;">
+            <div class="absolute inset-0 rounded-full streak-ring"></div>
+            <div class="absolute rounded-full flex flex-col items-center justify-center" style="inset:16px;background:#0D0D0E;">
+              <i data-lucide="flame" class="text-clay" style="width:26px;height:26px;"></i>
+              <span class="font-serif text-white leading-none mt-1" style="font-size:54px;" id="streakCount">0</span>
+              <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wide mt-2 text-center leading-tight">dias seguidos<br>treinando</span>
             </div>
           </div>
         </section>
 
+        <section class="space-y-3">
+          <h2 class="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] px-1 text-center">Últimos 7 dias</h2>
+          <div class="flex justify-between items-end" id="weekStrip"></div>
+          <div class="h-px" style="background:linear-gradient(90deg, transparent, #C9482F, transparent);"></div>
+        </section>
+
         <section class="space-y-3" id="todayWorkoutSection">
-          <h2 class="text-[10px] font-bold text-muted uppercase tracking-[0.2em] px-1">Treino de Hoje</h2>
+          <h2 class="text-[10px] font-bold text-clay uppercase tracking-[0.2em] px-1">Treino de Hoje</h2>
+          <h3 class="text-white text-2xl font-extrabold uppercase leading-tight -mt-1">Qual treino de hoje?</h3>
+          <div class="w-9 h-1 rounded-full bg-clay mb-1"></div>
           <div id="todayWorkoutCard"></div>
         </section>
       </main>
@@ -372,24 +394,24 @@
     </section>
 
     <!-- ===================== BOTTOM NAV (único, compartilhado) ===================== -->
-    <nav id="bottomNav" class="flex-shrink-0 bg-white/80 backdrop-blur-xl border-t border-hairline px-3 pt-3 pb-8 flex justify-around items-center z-50">
+    <nav id="bottomNav" class="flex-shrink-0 backdrop-blur-xl border-t px-3 pt-3 pb-8 flex justify-around items-center z-50" style="background:rgba(10,10,11,.92); border-color:#232326;">
       <button class="nav-item nav-item-active flex items-center justify-center rounded-full px-3 py-2.5 text-clay bg-clay/10 transition-all duration-300 ease-out" data-nav="hoje">
         <i data-lucide="house" class="text-xl flex-shrink-0"></i>
         <span class="nav-label text-[11px] font-bold uppercase tracking-widest overflow-hidden whitespace-nowrap transition-all duration-300 ease-out">Hoje</span>
       </button>
-      <button class="nav-item flex items-center justify-center rounded-full px-3 py-2.5 text-muted transition-all duration-300 ease-out hover:text-ink" data-nav="treinos">
+      <button class="nav-item flex items-center justify-center rounded-full px-3 py-2.5 text-gray-500 transition-all duration-300 ease-out hover:text-white" data-nav="treinos">
         <i data-lucide="dumbbell" class="text-xl flex-shrink-0"></i>
         <span class="nav-label text-[11px] font-bold uppercase tracking-widest overflow-hidden whitespace-nowrap transition-all duration-300 ease-out">Treinos</span>
       </button>
-      <button class="nav-item flex items-center justify-center rounded-full px-3 py-2.5 text-muted transition-all duration-300 ease-out hover:text-ink" data-nav="cardio">
+      <button class="nav-item flex items-center justify-center rounded-full px-3 py-2.5 text-gray-500 transition-all duration-300 ease-out hover:text-white" data-nav="cardio">
         <i data-lucide="footprints" class="text-xl flex-shrink-0"></i>
         <span class="nav-label text-[11px] font-bold uppercase tracking-widest overflow-hidden whitespace-nowrap transition-all duration-300 ease-out">Cardio</span>
       </button>
-      <button class="nav-item flex items-center justify-center rounded-full px-3 py-2.5 text-muted transition-all duration-300 ease-out hover:text-ink" data-nav="historico">
+      <button class="nav-item flex items-center justify-center rounded-full px-3 py-2.5 text-gray-500 transition-all duration-300 ease-out hover:text-white" data-nav="historico">
         <i data-lucide="history" class="text-xl flex-shrink-0"></i>
         <span class="nav-label text-[11px] font-bold uppercase tracking-widest overflow-hidden whitespace-nowrap transition-all duration-300 ease-out">Histórico</span>
       </button>
-      <button class="nav-item flex items-center justify-center rounded-full px-3 py-2.5 text-muted transition-all duration-300 ease-out hover:text-ink" data-nav="calendario">
+      <button class="nav-item flex items-center justify-center rounded-full px-3 py-2.5 text-gray-500 transition-all duration-300 ease-out hover:text-white" data-nav="calendario">
         <i data-lucide="calendar-check" class="text-xl flex-shrink-0"></i>
         <span class="nav-label text-[11px] font-bold uppercase tracking-widest overflow-hidden whitespace-nowrap transition-all duration-300 ease-out">Calendário</span>
       </button>
