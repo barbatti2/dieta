@@ -1559,6 +1559,7 @@ function showLoginScreen() {
   document.getElementById("loginPassword").value = "";
   document.getElementById("loginError").classList.add("hidden");
   document.getElementById("loginPassword").focus();
+  if (window.lucide) window.lucide.createIcons();
 }
 
 function hideLoginScreen() {

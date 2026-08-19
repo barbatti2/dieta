@@ -97,14 +97,11 @@
     <!-- tela de login (senha única do app) -->
     <div id="loginScreen" class="absolute inset-0 z-[1000] flex-col" style="background:#0A0A0B; display:none;">
 
-      <!-- foto de topo com fade e arco laranja -->
+      <!-- foto de topo com degradê suave até o preto -->
       <div class="relative w-full flex-shrink-0" style="height:42%;">
         <img src="https://images.unsplash.com/photo-1517963879433-6ad2b056d712?auto=format&fit=crop&w=800&q=80"
           alt="" class="absolute inset-0 w-full h-full object-cover" style="filter:brightness(.55) contrast(1.05) saturate(.9);" />
-        <div class="absolute inset-0" style="background:linear-gradient(180deg, rgba(10,10,11,0) 38%, #0A0A0B 94%);"></div>
-        <svg class="absolute left-0 right-0 bottom-[-1px] w-full" height="34" viewBox="0 0 375 34" preserveAspectRatio="none" fill="none">
-          <path d="M0,32 Q140,-8 375,28" stroke="#C9482F" stroke-width="2.5" fill="none" />
-        </svg>
+        <div class="absolute inset-0" style="background:linear-gradient(180deg, rgba(10,10,11,0) 0%, rgba(10,10,11,0) 18%, #0A0A0B 100%);"></div>
       </div>
 
       <!-- conteúdo do login -->
@@ -117,7 +114,7 @@
             <div class="relative">
               <i data-lucide="lock" class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-base pointer-events-none"></i>
               <input id="loginPassword" type="password" placeholder="Senha" autocomplete="current-password"
-                class="w-full bg-[#141416] border border-hairline rounded-2xl pl-11 pr-11 py-3.5 text-left text-white font-semibold tracking-wide outline-none focus:border-clay" />
+                class="w-full bg-[#141416] border border-hairline rounded-2xl pl-11 pr-11 py-3.5 text-center text-white font-semibold tracking-wide outline-none focus:border-clay" />
               <button type="button" id="togglePasswordBtn" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white">
                 <i data-lucide="eye" class="text-base"></i>
               </button>
