@@ -76,10 +76,13 @@
     .profile-btn.active { box-shadow: 0 0 0 2px #C9482F, 0 0 0 4px #141416; }
 
     .weekday-pill { background: #1C1C1E; }
-    .weekday-pill.trained, .weekday-pill.today {
+    .weekday-pill.trained {
       background: linear-gradient(180deg, #FF6B3D, #C9482F);
       box-shadow: 0 6px 16px -4px rgba(201,72,47,.55);
     }
+    /* dia de hoje que AINDA não foi treinado: contorno, não preenchido —
+       pra não parecer "concluído" antes da hora */
+    .weekday-pill.today-pending { background: #1C1C1E; border: 2px solid #C9482F; }
     .ficha-card { background: #141416; border: 1px solid #232326; }
     .ficha-card:active { border-color: #C9482F; }
   </style>
@@ -233,6 +236,8 @@
       </header>
 
       <main class="flex-1 min-h-0 overflow-y-auto px-6 pb-6 space-y-3">
+        <section class="bg-card border border-hairline rounded-2xl p-3" id="execSeriesCard"></section>
+
         <div class="relative w-full aspect-[4/3] rounded-2xl overflow-hidden bg-paper flex items-center justify-center border border-hairline">
           <img id="execImage" src="" alt="" class="w-full h-full object-cover">
         </div>
@@ -244,8 +249,6 @@
           </div>
           <div class="w-28 h-28 rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0 bg-card border border-hairline" id="execModel"></div>
         </section>
-
-        <section class="bg-card border border-hairline rounded-2xl p-4" id="execSeriesCard"></section>
       </main>
 
       <footer class="flex-shrink-0 backdrop-blur-xl border-t border-hairline px-6 pt-4 pb-8 flex items-center gap-3 z-50" style="background:rgba(10,10,11,.92);">
@@ -391,7 +394,7 @@
               <div class="flex-1">
                 <div class="flex items-center justify-between mb-1">
                   <h4 class="text-sm font-extrabold uppercase tracking-tight" id="dayDetailName">Treino</h4>
-                  <span class="text-[9px] font-bold text-emerald uppercase tracking-tighter">Concluído</span>
+                  <span class="text-[9px] font-bold text-emerald uppercase tracking-tighter" id="dayDetailBadge">Concluído</span>
                 </div>
                 <p class="text-xs text-muted" id="dayDetailMeta">—</p>
               </div>

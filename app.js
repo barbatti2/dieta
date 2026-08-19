@@ -77,27 +77,47 @@ const TEMPLATES = [
 const PROFILES = {
   voce: {
     nome: "Você",
-    streak: 0,
-    diasTreinados: [],
+    diasTreinados: [], // datas reais no formato "AAAA-MM-DD"
     cardioLog: [],
     historicoLog: [],
-    concluidosHoje: [],
+    concluidosPorDia: {}, // { "AAAA-MM-DD": ["a", "b"] } — quais fichas foram concluídas em cada dia
     hojeTemplateId: null, // qual ficha (A/B/C) esse perfil escolheu como treino de hoje
     execucao: null // treino em andamento desse perfil (independente do outro perfil)
   },
   parceira: {
     nome: "Sua parceira",
-    streak: 0,
     diasTreinados: [],
     cardioLog: [],
     historicoLog: [],
-    concluidosHoje: [],
+    concluidosPorDia: {},
     hojeTemplateId: null,
     execucao: null
   }
 };
 
-const HOJE_DIA = 16; // dia fake usado como "hoje" nos dados de exemplo
+/* =========================================================
+   DATAS — o app usa sempre a data real do aparelho. "diasTreinados"
+   guarda datas completas ("AAAA-MM-DD"), não só o dia do mês, pra não
+   misturar dias de meses/anos diferentes.
+   ========================================================= */
+function pad2(n) { return String(n).padStart(2, "0"); }
+function dateStr(d) { return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`; }
+function todayStr() { return dateStr(new Date()); }
+
+// sequência atual de dias treinados seguidos, terminando hoje (ou ontem,
+// se hoje ainda não treinou — assim a sequência não "zera" só por ainda
+// não ter treinado no dia de hoje)
+function computeStreak(diasTreinados) {
+  const set = new Set(diasTreinados);
+  const cursor = new Date();
+  if (!set.has(dateStr(cursor))) cursor.setDate(cursor.getDate() - 1);
+  let streak = 0;
+  while (set.has(dateStr(cursor))) {
+    streak++;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return streak;
+}
 
 /* =========================================================
    FIRESTORE — perfis (voce/parceira) ficam em profiles/{id},
@@ -148,6 +168,21 @@ async function deleteTemplateRemote(id) {
   }
 }
 
+// corrige formatos antigos vindos do Firestore (versão anterior guardava só
+// o "dia do mês" fixo, sem mês/ano, e um "concluidosHoje" que nunca zerava)
+function normalizeProfile(p) {
+  p.diasTreinados = Array.isArray(p.diasTreinados)
+    ? p.diasTreinados.filter(d => typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d))
+    : [];
+  if (!p.concluidosPorDia || typeof p.concluidosPorDia !== "object" || Array.isArray(p.concluidosPorDia)) {
+    p.concluidosPorDia = {};
+  }
+  if (!Array.isArray(p.historicoLog)) p.historicoLog = [];
+  if (!Array.isArray(p.cardioLog)) p.cardioLog = [];
+  delete p.concluidosHoje;
+  delete p.streak;
+}
+
 // roda uma única vez, no carregamento do app: busca tudo que já existe no
 // Firestore. Se for a primeira vez (banco vazio), semeia com os dados
 // padrão acima para não começar com o app em branco.
@@ -171,6 +206,7 @@ async function carregarDadosIniciais() {
       } else {
         await setDoc(ref, PROFILES[profileId]);
       }
+      normalizeProfile(PROFILES[profileId]);
     }
   } catch (err) {
     console.error("Não foi possível conectar ao Firestore — usando dados padrão localmente:", err);
@@ -182,10 +218,11 @@ async function carregarDadosIniciais() {
    ESTADO
    ========================================================= */
 
+const AGORA = new Date();
 let state = {
   perfilAtual: "voce",
-  calMonth: 7, // agosto = index 7 (0-based)
-  calYear: 2026,
+  calMonth: AGORA.getMonth(), // mês atual real (0-based)
+  calYear: AGORA.getFullYear(),
   calSelectedDay: null,
   cardioTipo: "esteira",
   cardioIntensidade: "leve"
@@ -274,26 +311,33 @@ document.addEventListener("click", (e) => {
 
 function renderHoje() {
   const p = currentProfile();
-  document.getElementById("streakCount").textContent = p.streak;
+  document.getElementById("streakCount").textContent = computeStreak(p.diasTreinados);
+
+  const hoje = new Date();
+  const hojeKey = dateStr(hoje);
+  document.getElementById("todayDate").textContent =
+    `${WEEKDAY_FULL[hoje.getDay()]}, ${hoje.getDate()} ${MONTH_NAMES[hoje.getMonth()].slice(0, 3)}`;
 
   const strip = document.getElementById("weekStrip");
   strip.innerHTML = "";
   // semana fixa de segunda a domingo (não é "últimos 7 dias" rolando — ela
-  // reinicia toda segunda-feira, ancorada no dia de hoje)
-  const hojeWeekday = HOJE_DIA % 7; // 0=Dom, 1=Seg, ... 6=Sáb
-  const diasDesdeSegunda = (hojeWeekday + 6) % 7; // Seg=0, Ter=1, ... Dom=6
-  const segundaDia = HOJE_DIA - diasDesdeSegunda;
+  // reinicia toda segunda-feira, ancorada no dia de hoje de verdade)
+  const diasDesdeSegunda = (hoje.getDay() + 6) % 7; // Seg=0, Ter=1, ... Dom=6
+  const segunda = new Date(hoje);
+  segunda.setDate(hoje.getDate() - diasDesdeSegunda);
+
   for (let offset = 0; offset <= 6; offset++) {
-    const dayNum = segundaDia + offset;
-    const trained = p.diasTreinados.includes(dayNum);
-    const isToday = dayNum === HOJE_DIA;
-    const highlight = trained || isToday;
+    const dia = new Date(segunda);
+    dia.setDate(segunda.getDate() + offset);
+    const diaKey = dateStr(dia);
+    const trained = p.diasTreinados.includes(diaKey);
+    const isToday = diaKey === hojeKey;
     const el = document.createElement("div");
     el.className = "flex flex-col items-center gap-2";
     el.innerHTML = `
-      <span class="text-[10px] font-bold uppercase ${isToday ? "text-clay" : "text-gray-500"}">${WEEKDAY_LABELS[dayNum % 7]}</span>
-      <div class="weekday-pill ${highlight ? "trained" : ""} rounded-full flex items-start justify-center pt-1.5 transition-all" style="width:32px;height:${isToday ? "72px" : "58px"};">
-        <div class="rounded-full flex-shrink-0" style="width:18px;height:18px;background:${highlight ? "#fff" : "#3A3A3C"};"></div>
+      <span class="text-[10px] font-bold uppercase ${isToday ? "text-clay" : "text-gray-500"}">${WEEKDAY_LABELS[dia.getDay()]}</span>
+      <div class="weekday-pill ${trained ? "trained" : (isToday ? "today-pending" : "")} rounded-full flex items-start justify-center pt-1.5 transition-all" style="width:32px;height:${isToday ? "72px" : "58px"};">
+        <div class="rounded-full flex-shrink-0" style="width:18px;height:18px;background:${trained ? "#fff" : (isToday ? "#C9482F" : "#3A3A3C")};"></div>
       </div>
     `;
     strip.appendChild(el);
@@ -341,7 +385,8 @@ function renderTodayWorkout() {
     return;
   }
 
-  const concluido = p.concluidosHoje.includes(t.id);
+  const concluidosHoje = p.concluidosPorDia[todayStr()] || [];
+  const concluido = concluidosHoje.includes(t.id);
   const emAndamento = p.execucao && p.execucao.templateId === t.id;
 
   if (concluido) {
@@ -403,8 +448,11 @@ function reabrirTreino(t) {
   const p = currentProfile();
   const ok = window.confirm(`Reabrir "${t.nome}"? Ele vai sair da lista de treinos concluídos de hoje.`);
   if (!ok) return;
-  const idx = p.concluidosHoje.indexOf(t.id);
-  if (idx >= 0) p.concluidosHoje.splice(idx, 1);
+  const listaHoje = p.concluidosPorDia[todayStr()];
+  if (listaHoje) {
+    const idx = listaHoje.indexOf(t.id);
+    if (idx >= 0) listaHoje.splice(idx, 1);
+  }
   p.execucao = {
     templateId: t.id,
     exercicioIndex: Math.max(0, t.exercicios.length - 1),
@@ -417,19 +465,21 @@ function reabrirTreino(t) {
   saveProfile(state.perfilAtual);
 }
 
-function marcarDiaTreinado() {
+function marcarDiaTreinado(dia) {
   const p = currentProfile();
-  if (!p.diasTreinados.includes(HOJE_DIA)) {
-    p.diasTreinados.push(HOJE_DIA);
-    p.streak++;
-  }
+  if (!p.diasTreinados.includes(dia)) p.diasTreinados.push(dia);
 }
 
-const DATA_HORA_FORMAT = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+const HORA_FORMAT = new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
+// "dia" (AAAA-MM-DD) é guardado à parte pra permitir agrupar o histórico
+// por dia/mês/ano e pra saber, se o item for excluído, se ainda sobra
+// algo registrado naquele dia (pra não deixar o dia marcado como
+// treinado incorretamente)
 function registrarNoHistorico(entry) {
   const p = currentProfile();
-  p.historicoLog.unshift({ ...entry, quando: DATA_HORA_FORMAT.format(new Date()) });
+  const agora = new Date();
+  p.historicoLog.unshift({ ...entry, dia: dateStr(agora), quando: HORA_FORMAT.format(agora) });
 }
 
 /* =========================================================
@@ -743,49 +793,38 @@ function renderExecSeries() {
 
   const container = document.getElementById("execSeriesCard");
   container.innerHTML = `
-    <div class="grid grid-cols-3 divide-x divide-hairline text-center mb-4">
+    <div class="grid grid-cols-3 divide-x divide-hairline text-center mb-2.5">
       <div class="px-1">
-        <i data-lucide="target" class="text-clay mx-auto mb-1" style="width:20px;height:20px;"></i>
-        <p class="text-[9px] font-bold text-gray-500 uppercase tracking-wide">Meta</p>
-        <p class="text-base font-extrabold text-white leading-tight">${repsResumo(cfg.series, cfg.reps)}</p>
+        <i data-lucide="target" class="text-clay mx-auto mb-0.5" style="width:15px;height:15px;"></i>
+        <p class="text-[8px] font-bold text-gray-500 uppercase tracking-wide">Meta</p>
+        <p class="text-xs font-extrabold text-white leading-tight">${repsResumo(cfg.series, cfg.reps)}</p>
       </div>
       <div class="px-1">
-        <i data-lucide="clock" class="text-clay mx-auto mb-1" style="width:20px;height:20px;"></i>
-        <p class="text-[9px] font-bold text-gray-500 uppercase tracking-wide">Descanso</p>
-        <p class="text-lg font-extrabold text-white leading-tight mt-1">${cfg.descanso}s</p>
+        <i data-lucide="clock" class="text-clay mx-auto mb-0.5" style="width:15px;height:15px;"></i>
+        <p class="text-[8px] font-bold text-gray-500 uppercase tracking-wide">Descanso</p>
+        <p class="text-xs font-extrabold text-white leading-tight">${cfg.descanso}s</p>
       </div>
       <div class="px-1">
-        <i data-lucide="dumbbell" class="text-clay mx-auto mb-1" style="width:20px;height:20px;"></i>
-        <p class="text-[9px] font-bold text-gray-500 uppercase tracking-wide">Foco</p>
-        <p class="text-sm font-extrabold text-white leading-tight mt-1.5 truncate">${grupo ? grupo.nome : "—"}</p>
+        <i data-lucide="dumbbell" class="text-clay mx-auto mb-0.5" style="width:15px;height:15px;"></i>
+        <p class="text-[8px] font-bold text-gray-500 uppercase tracking-wide">Foco</p>
+        <p class="text-xs font-extrabold text-white leading-tight truncate">${grupo ? grupo.nome : "—"}</p>
       </div>
     </div>
-    <div class="h-px bg-hairline mb-4"></div>
-    <div class="flex justify-around mb-4">
-      ${pesos.map((peso, i) => `
-        <div class="flex flex-col items-center gap-1.5">
-          <span class="text-[10px] font-bold text-gray-500 whitespace-nowrap">${i + 1}ª carga</span>
-          <div class="w-6 h-6 rounded-full border flex items-center justify-center transition-all ${
-            peso != null && !execEditingSeries.has(i) ? "bg-clay border-clay" : "border-hairline"
-          }">
-            ${peso != null && !execEditingSeries.has(i) ? '<i data-lucide="check" class="text-white" style="width:12px;height:12px;"></i>' : ""}
-          </div>
-        </div>
-      `).join("")}
+    <div class="h-px bg-hairline mb-2.5"></div>
+    <div class="flex items-center gap-1.5 mb-1.5">
+      <i data-lucide="weight" class="text-clay" style="width:12px;height:12px;"></i>
+      <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Carga (kg)</span>
     </div>
-    <div class="flex items-center gap-1.5 mb-2">
-      <i data-lucide="weight" class="text-clay" style="width:14px;height:14px;"></i>
-      <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wide">Carga (kg)</span>
-    </div>
-    <div class="flex flex-wrap gap-2">
+    <div class="flex flex-wrap gap-1.5">
       ${pesos.map((peso, i) => {
         const mostrarInput = peso == null || execEditingSeries.has(i);
         return `
           <div style="flex:1 1 70px;">
             ${mostrarInput
-              ? `<input type="number" inputmode="decimal" step="0.5" class="serie-peso-input w-full bg-[#1C1C1E] border border-hairline rounded-xl py-2.5 text-center text-white font-bold outline-none focus:border-clay" placeholder="Ex.: 40" value="${peso != null ? peso : ""}" data-idx="${i}">`
-              : `<button type="button" class="serie-peso-display w-full bg-[#1C1C1E] border border-clay rounded-xl py-2.5 text-center active:scale-[0.97] transition-all" data-idx="${i}">
-                   <span class="text-base font-extrabold text-white">${peso}</span><span class="text-[10px] text-gray-500 ml-0.5">kg</span>
+              ? `<input type="number" inputmode="decimal" step="0.5" class="serie-peso-input w-full bg-[#1C1C1E] border border-hairline rounded-xl py-2 text-center text-white font-bold outline-none focus:border-clay" placeholder="Ex.: 40" value="${peso != null ? peso : ""}" data-idx="${i}">`
+              : `<button type="button" class="serie-peso-display w-full bg-[#1C1C1E] border border-clay rounded-xl py-2 text-center active:scale-[0.97] transition-all flex items-center justify-center gap-1" data-idx="${i}">
+                   <i data-lucide="check" class="text-clay" style="width:11px;height:11px;"></i>
+                   <span class="text-sm font-extrabold text-white">${peso}</span><span class="text-[10px] text-gray-500">kg</span>
                  </button>`
             }
           </div>
@@ -932,15 +971,18 @@ document.getElementById("mainExecBtn").addEventListener("click", () => {
   }
 
   const p = currentProfile();
-  if (!p.concluidosHoje.includes(t.id)) p.concluidosHoje.push(t.id);
+  const dia = todayStr();
+  if (!p.concluidosPorDia[dia]) p.concluidosPorDia[dia] = [];
+  if (!p.concluidosPorDia[dia].includes(t.id)) p.concluidosPorDia[dia].push(t.id);
   registrarNoHistorico({
     tipo: "treino",
     nome: t.nome,
     ficha: t.ficha,
+    templateId: t.id,
     detalhe: `${t.exercicios.length} exercícios`,
     exercicios: ec.log
   });
-  marcarDiaTreinado();
+  marcarDiaTreinado(dia);
   currentProfile().execucao = null;
   renderHoje();
   renderCalendario();
@@ -1002,13 +1044,14 @@ document.getElementById("confirmCardioBtn").addEventListener("click", () => {
   const minutos = document.getElementById("cardioMinValue").textContent;
   const cardioLabels = { esteira: "Esteira", bike: "Bike", eliptico: "Elíptico", outro: "Outra atividade" };
   const intensidadeLabels = { leve: "Leve", moderado: "Moderado", forte: "Forte" };
-  p.cardioLog.push({ tipo: state.cardioTipo, minutos, intensidade: state.cardioIntensidade, dia: HOJE_DIA });
+  const dia = todayStr();
+  p.cardioLog.push({ tipo: state.cardioTipo, minutos, intensidade: state.cardioIntensidade, dia });
   registrarNoHistorico({
     tipo: "cardio",
     nome: cardioLabels[state.cardioTipo] || "Cardio",
     detalhe: `${minutos} min · ${intensidadeLabels[state.cardioIntensidade] || ""}`
   });
-  marcarDiaTreinado();
+  marcarDiaTreinado(dia);
   renderHoje();
   renderCalendario();
   renderHistorico();
@@ -1047,13 +1090,14 @@ function renderCalendario() {
 
   const firstDay = new Date(state.calYear, state.calMonth, 1).getDay();
   const daysInMonth = new Date(state.calYear, state.calMonth + 1, 0).getDate();
-  const isCurrentMonth = state.calMonth === 7 && state.calYear === 2026;
+  const hojeKey = todayStr();
 
   for (let i = 0; i < firstDay; i++) grid.appendChild(document.createElement("span"));
 
   for (let day = 1; day <= daysInMonth; day++) {
-    const trained = isCurrentMonth && p.diasTreinados.includes(day);
-    const isToday = isCurrentMonth && day === HOJE_DIA;
+    const diaKey = `${state.calYear}-${pad2(state.calMonth + 1)}-${pad2(day)}`;
+    const trained = p.diasTreinados.includes(diaKey);
+    const isToday = diaKey === hojeKey;
     const isSelected = state.calSelectedDay === day;
 
     const cell = document.createElement("button");
@@ -1065,23 +1109,29 @@ function renderCalendario() {
     if (trained && !isSelected) {
       cell.innerHTML += `<div class="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 ${isToday ? "bg-white" : "bg-clay"} rounded-full"></div>`;
     }
-    cell.addEventListener("click", () => showDayDetail(day, trained));
+    cell.addEventListener("click", () => showDayDetail(diaKey, day));
     grid.appendChild(cell);
   }
 }
 
-function showDayDetail(day, trained) {
+function showDayDetail(diaKey, day) {
   state.calSelectedDay = day;
   renderCalendario();
+
+  const p = currentProfile();
+  const entradas = p.historicoLog.filter(item => item.dia === diaKey);
 
   const wrap = document.getElementById("dayDetailWrap");
   wrap.style.display = "block";
   document.getElementById("dayDetailTitle").textContent = `${day} de ${MONTH_NAMES[state.calMonth]}`;
 
-  if (trained) {
-    document.getElementById("dayDetailName").textContent = "Treino ou cardio concluído";
-    document.getElementById("dayDetailMeta").textContent = "Detalhes completos virão do histórico salvo no Firestore.";
+  const badge = document.getElementById("dayDetailBadge");
+  if (entradas.length > 0) {
+    badge.style.display = "";
+    document.getElementById("dayDetailName").textContent = entradas.map(e => e.nome).join(" · ");
+    document.getElementById("dayDetailMeta").textContent = entradas.map(e => e.detalhe || "").filter(Boolean).join(" · ");
   } else {
+    badge.style.display = "none";
     document.getElementById("dayDetailName").textContent = "Nenhuma atividade";
     document.getElementById("dayDetailMeta").textContent = "Não há treino registrado neste dia.";
   }
@@ -1092,6 +1142,18 @@ function showDayDetail(day, trained) {
 /* =========================================================
    TELA "HISTÓRICO"
    ========================================================= */
+
+// texto do cabeçalho de cada grupo de dia no histórico ("Hoje", "Ontem" ou
+// "19 de agosto de 2026")
+function formatGroupLabel(diaKey) {
+  if (!diaKey) return "Sem data";
+  const hoje = todayStr();
+  const ontem = dateStr(new Date(Date.now() - 86400000));
+  if (diaKey === hoje) return "Hoje";
+  if (diaKey === ontem) return "Ontem";
+  const [ano, mes, dia] = diaKey.split("-").map(Number);
+  return `${dia} de ${MONTH_NAMES[mes - 1]} de ${ano}`;
+}
 
 function renderHistorico() {
   const p = currentProfile();
@@ -1108,7 +1170,18 @@ function renderHistorico() {
   }
 
   list.innerHTML = "";
+  let ultimoDia = undefined;
   p.historicoLog.forEach((item, idx) => {
+    // a lista já vem ordenada do mais recente pro mais antigo (unshift ao
+    // registrar), então basta um novo cabeçalho toda vez que o dia muda
+    if (item.dia !== ultimoDia) {
+      ultimoDia = item.dia;
+      const header = document.createElement("p");
+      header.className = "text-[10px] font-bold text-muted uppercase tracking-[0.2em] px-1 pt-2 first:pt-0";
+      header.textContent = formatGroupLabel(item.dia);
+      list.appendChild(header);
+    }
+
     const temExercicios = item.tipo === "treino" && item.exercicios && item.exercicios.length > 0;
     const card = document.createElement("div");
     card.className = "bg-card border border-hairline rounded-xl overflow-hidden";
@@ -1160,8 +1233,30 @@ function renderHistorico() {
     header.querySelector(".historico-delete").addEventListener("click", (e) => {
       e.stopPropagation();
       if (!confirm(`Excluir "${item.nome}" do histórico?`)) return;
+
+      const diaDoItem = item.dia;
       p.historicoLog.splice(idx, 1);
+
+      // se era um treino concluído, tira ele da lista de "concluídos" daquele
+      // dia — senão continuaria aparecendo como finalizado mesmo excluído
+      if (item.tipo === "treino" && item.templateId && p.concluidosPorDia[diaDoItem]) {
+        const i2 = p.concluidosPorDia[diaDoItem].indexOf(item.templateId);
+        if (i2 >= 0) p.concluidosPorDia[diaDoItem].splice(i2, 1);
+      }
+
+      // só desmarca o dia como "treinado" (sequência, calendário) se não
+      // sobrou mais nenhum registro naquele mesmo dia
+      if (diaDoItem) {
+        const aindaTemNesseDia = p.historicoLog.some(x => x.dia === diaDoItem);
+        if (!aindaTemNesseDia) {
+          const di = p.diasTreinados.indexOf(diaDoItem);
+          if (di >= 0) p.diasTreinados.splice(di, 1);
+        }
+      }
+
       renderHistorico();
+      renderHoje();
+      renderCalendario();
       saveProfile(state.perfilAtual);
     });
 
