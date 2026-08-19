@@ -47,7 +47,7 @@ function repsResumo(series, reps) {
   return Array.isArray(reps) ? `${reps.join("+")} reps` : `${series}× ${reps} reps`;
 }
 
-const TEMPLATES = [
+const DEFAULT_TEMPLATES = [
   { id: "a", nome: "Peito e Tríceps", ficha: "Ficha A", tags: ["Peitoral", "Tríceps", "Ombros"], dias: [1, 4], exercicios: [
     exCfg("supino_reto_barra", 4, 10, 60),
     exCfg("supino_inclinado_halteres", 3, 10, 60),
@@ -73,6 +73,32 @@ const TEMPLATES = [
     exCfg("panturrilha_em_pe", 4, 15, 30)
   ] }
 ];
+
+// cópia "profunda o suficiente" (ficha + cada exercício) — usada pra
+// semear cada perfil sem que os dois acabem compartilhando o mesmo
+// objeto/array na memória (o que faria uma edição vazar pro outro perfil
+// mesmo antes de qualquer salvamento no Firestore)
+function cloneTemplates(list) {
+  return list.map(t => ({ ...t, dias: [...(t.dias || [])], tags: [...(t.tags || [])], exercicios: (t.exercicios || []).map(e => ({ ...e })) }));
+}
+
+// cada perfil (Você / Sua parceira) tem sua PRÓPRIA lista de fichas de
+// treino — criar, editar dias/exercícios ou excluir uma ficha num perfil
+// nunca deve afetar o outro. No Firestore isso vira uma subcoleção por
+// perfil: profiles/{perfilId}/templates/{fichaId} (ver carregarDadosIniciais).
+// Os valores abaixo são só o padrão usado antes de carregar do Firestore.
+const TEMPLATES_BY_PROFILE = {
+  voce: cloneTemplates(DEFAULT_TEMPLATES),
+  parceira: cloneTemplates(DEFAULT_TEMPLATES)
+};
+
+// retorna sempre a lista de fichas do perfil selecionado no momento — todo
+// o resto do código usa essa função (em vez de um array fixo único) pra
+// garantir que treinos criados/editados/excluídos num perfil não vazem
+// pro outro
+function treinosDoPerfilAtual() {
+  return TEMPLATES_BY_PROFILE[state.perfilAtual];
+}
 
 const PROFILES = {
   voce: {
@@ -155,18 +181,20 @@ async function saveProfile(profileId) {
 }
 
 // salva uma ficha de treino inteira (nome, dias, exercícios com séries/reps/descanso)
-async function saveTemplate(t) {
+// — sempre na subcoleção do perfil dono da ficha, nunca na coleção antiga
+// compartilhada, pra manter os perfis independentes
+async function saveTemplate(profileId, t) {
   try {
-    await setDoc(doc(db, "templates", t.id), t);
+    await setDoc(doc(db, "profiles", profileId, "templates", t.id), t);
   } catch (err) {
     console.error("Não foi possível salvar a ficha no Firestore:", err);
     showToast("Sem conexão — treino não foi salvo");
   }
 }
 
-async function deleteTemplateRemote(id) {
+async function deleteTemplateRemote(profileId, id) {
   try {
-    await deleteDoc(doc(db, "templates", id));
+    await deleteDoc(doc(db, "profiles", profileId, "templates", id));
   } catch (err) {
     console.error("Não foi possível excluir a ficha no Firestore:", err);
   }
@@ -201,25 +229,31 @@ function normalizeProfile(p) {
 // e mais de uma ficha pode estar marcada pro mesmo dia.
 function getTreinosDoDiaAtual() {
   const diaSemana = new Date().getDay();
-  return TEMPLATES.filter(t => Array.isArray(t.dias) && t.dias.includes(diaSemana));
+  return treinosDoPerfilAtual().filter(t => Array.isArray(t.dias) && t.dias.includes(diaSemana));
 }
 
 // roda uma única vez, no carregamento do app: busca tudo que já existe no
-// Firestore. Se for a primeira vez (banco vazio), semeia com os dados
-// padrão acima para não começar com o app em branco.
+// Firestore, por perfil. Se a subcoleção de um perfil ainda estiver vazia
+// (primeira vez desse perfil), semeia a partir do que já existir na coleção
+// antiga e compartilhada "templates" (pra não perder fichas já criadas
+// antes dessa separação por perfil); se nem isso existir, usa os padrões.
 async function carregarDadosIniciais() {
   try {
-    const templatesSnap = await getDocs(collection(db, "templates"));
-    if (templatesSnap.empty) {
-      const batch = writeBatch(db);
-      TEMPLATES.forEach(t => batch.set(doc(db, "templates", t.id), t));
-      await batch.commit();
-    } else {
-      TEMPLATES.length = 0;
-      templatesSnap.forEach(docSnap => TEMPLATES.push(docSnap.data()));
-    }
+    let legacySnap = null; // busca a coleção antiga só se algum perfil precisar dela
 
     for (const profileId of Object.keys(PROFILES)) {
+      const templatesSnap = await getDocs(collection(db, "profiles", profileId, "templates"));
+      if (templatesSnap.empty) {
+        if (!legacySnap) legacySnap = await getDocs(collection(db, "templates"));
+        const seed = !legacySnap.empty ? legacySnap.docs.map(d => d.data()) : DEFAULT_TEMPLATES;
+        const batch = writeBatch(db);
+        seed.forEach(t => batch.set(doc(db, "profiles", profileId, "templates", t.id), t));
+        await batch.commit();
+        TEMPLATES_BY_PROFILE[profileId] = cloneTemplates(seed);
+      } else {
+        TEMPLATES_BY_PROFILE[profileId] = templatesSnap.docs.map(d => d.data());
+      }
+
       const ref = doc(db, "profiles", profileId);
       const snap = await getDoc(ref);
       if (snap.exists()) {
@@ -373,6 +407,19 @@ function renderHoje() {
   renderTodayWorkout();
 }
 
+// tira um treino extra da lista de hoje (usado pelo botão "Remover", pra
+// desfazer uma adição feita sem querer). Não mexe em treinos programados
+// de verdade pra hoje — esses continuam voltando pela sugestão automática.
+function removerTreinoHoje(templateId) {
+  const p = currentProfile();
+  const i = p.hojeTemplateIds.indexOf(templateId);
+  if (i >= 0) p.hojeTemplateIds.splice(i, 1);
+  const j = p.hojeAutoIds.indexOf(templateId);
+  if (j >= 0) p.hojeAutoIds.splice(j, 1);
+  renderTodayWorkout();
+  saveProfile(state.perfilAtual);
+}
+
 function renderTodayWorkout() {
   const p = currentProfile();
   const container = document.getElementById("todayWorkoutCard");
@@ -442,7 +489,7 @@ function renderTodayWorkout() {
     if (titleEl) titleEl.textContent = slotId ? "Trocar por qual treino?" : "Adicionar qual treino?";
     container.innerHTML = `<div class="flex flex-col gap-3" id="hojeTemplatePicker"></div>`;
     const picker = document.getElementById("hojeTemplatePicker");
-    const disponiveis = TEMPLATES.filter(t => t.id === slotId || !p.hojeTemplateIds.includes(t.id));
+    const disponiveis = treinosDoPerfilAtual().filter(t => t.id === slotId || !p.hojeTemplateIds.includes(t.id));
     disponiveis.forEach((t, idx) => {
       const btn = document.createElement("button");
       btn.className = "today-pick-btn ficha-card w-full flex items-center gap-4 rounded-2xl p-4 text-left transition-all active:scale-[0.98]";
@@ -489,17 +536,30 @@ function renderTodayWorkout() {
     return;
   }
 
-  // nenhuma ficha programada pra hoje e nada escolhido ainda: cai direto no
-  // seletor manual (modo "adicionar", sem slot pra substituir)
+  // nenhuma ficha programada pra hoje e nada adicionado manualmente ainda:
+  // mostra o aviso de "sem treinos", em vez de forçar a escolha
   if (!p.hojeTemplateIds.length) {
-    state.escolhaManual = true;
-    state.escolhaManualSlot = null;
-    renderTodayWorkout();
+    if (titleEl) titleEl.textContent = "Sem treinos para hoje";
+    container.innerHTML = `
+      <div class="ficha-card rounded-2xl p-6 flex flex-col items-center text-center gap-3">
+        <div class="w-11 h-11 rounded-full flex items-center justify-center text-muted flex-shrink-0" style="background:#1C1C1E;">
+          <i data-lucide="calendar-x"></i>
+        </div>
+        <p class="text-sm text-gray-400">Nenhum treino programado pra hoje no menu Treinos.</p>
+        <button id="semTreinoAlterarBtn" class="text-xs font-bold text-clay uppercase tracking-widest mt-1">Deseja alterar?</button>
+      </div>
+    `;
+    document.getElementById("semTreinoAlterarBtn").addEventListener("click", () => {
+      state.escolhaManual = true;
+      state.escolhaManualSlot = null;
+      renderTodayWorkout();
+    });
+    refreshIcons();
     return;
   }
 
   // alguma ficha escolhida foi excluída no editor desde então: tira da lista
-  const validos = p.hojeTemplateIds.filter(id => TEMPLATES.some(t => t.id === id));
+  const validos = p.hojeTemplateIds.filter(id => treinosDoPerfilAtual().some(t => t.id === id));
   if (validos.length !== p.hojeTemplateIds.length) {
     p.hojeTemplateIds = validos;
     p.hojeAutoIds = (p.hojeAutoIds || []).filter(id => validos.includes(id));
@@ -516,13 +576,18 @@ function renderTodayWorkout() {
 
   container.innerHTML = "";
   const concluidosHoje = p.concluidosPorDia[todayStr()] || [];
+  // fichas realmente programadas pra hoje (dia marcado no menu Treinos) —
+  // qualquer outra coisa na lista é um treino extra, somado manualmente
+  // via "Deseja alterar?" / "Adicionar outro treino", e pode ser removida
+  const sugestoesHojeIds = getTreinosDoDiaAtual().map(t => t.id);
 
   p.hojeTemplateIds.forEach(id => {
-    const t = TEMPLATES.find(x => x.id === id);
+    const t = treinosDoPerfilAtual().find(x => x.id === id);
     if (!t) return;
 
     const concluido = concluidosHoje.includes(t.id);
     const emAndamento = p.execucao && p.execucao.templateId === t.id;
+    const isExtra = !sugestoesHojeIds.includes(t.id);
     const card = document.createElement("div");
     card.className = "mb-3";
 
@@ -538,7 +603,10 @@ function renderTodayWorkout() {
           </div>
           <i data-lucide="rotate-ccw" class="text-emerald text-sm flex-shrink-0"></i>
         </button>
-        <button class="trocarTreinoBtn mt-3 text-xs font-bold text-clay uppercase tracking-widest">Deseja alterar?</button>
+        <div class="flex items-center gap-4 mt-3">
+          <button class="trocarTreinoBtn text-xs font-bold text-clay uppercase tracking-widest">Deseja alterar?</button>
+          ${isExtra ? `<button class="removerTreinoBtn text-xs font-bold text-gray-500 uppercase tracking-widest">Remover</button>` : ""}
+        </div>
       `;
       card.querySelector(".reabrirTreinoBtn").addEventListener("click", () => reabrirTreino(t));
       card.querySelector(".trocarTreinoBtn").addEventListener("click", (e) => {
@@ -547,6 +615,12 @@ function renderTodayWorkout() {
         state.escolhaManualSlot = t.id;
         renderTodayWorkout();
       });
+      if (isExtra) {
+        card.querySelector(".removerTreinoBtn").addEventListener("click", (e) => {
+          e.stopPropagation();
+          removerTreinoHoje(t.id);
+        });
+      }
     } else {
       card.innerHTML = `
         <div class="ficha-card rounded-2xl p-4">
@@ -563,7 +637,10 @@ function renderTodayWorkout() {
           <button class="start-today-btn w-full bg-clay text-white font-bold py-2.5 rounded-xl text-sm active:scale-[0.98] transition-all" data-template-id="${t.id}">
             ${emAndamento ? "Continuar Treino" : "Iniciar Treino"}
           </button>
-          <button class="trocarTreinoBtn mt-2 w-full text-xs font-bold text-gray-500 uppercase tracking-widest py-1">Deseja alterar?</button>
+          <div class="flex items-center gap-4 mt-2">
+            <button class="trocarTreinoBtn flex-1 text-xs font-bold text-gray-500 uppercase tracking-widest py-1">Deseja alterar?</button>
+            ${isExtra ? `<button class="removerTreinoBtn text-xs font-bold text-gray-500 uppercase tracking-widest py-1">Remover</button>` : ""}
+          </div>
         </div>
       `;
       card.querySelector(".start-today-btn").addEventListener("click", () => startExecution(t.id));
@@ -572,13 +649,18 @@ function renderTodayWorkout() {
         state.escolhaManualSlot = t.id;
         renderTodayWorkout();
       });
+      if (isExtra) {
+        card.querySelector(".removerTreinoBtn").addEventListener("click", () => {
+          removerTreinoHoje(t.id);
+        });
+      }
     }
 
     container.appendChild(card);
   });
 
   // permite somar mais uma ficha além das já programadas/escolhidas pra hoje
-  if (p.hojeTemplateIds.length < TEMPLATES.length) {
+  if (p.hojeTemplateIds.length < treinosDoPerfilAtual().length) {
     const addBtn = document.createElement("button");
     addBtn.className = "w-full text-xs font-bold text-clay uppercase tracking-widest py-2 text-center";
     addBtn.textContent = "+ Adicionar outro treino";
@@ -666,7 +748,7 @@ function registrarNoHistorico(entry) {
 function renderTemplateList() {
   const list = document.getElementById("templateList");
   list.innerHTML = "";
-  TEMPLATES.forEach(t => {
+  treinosDoPerfilAtual().forEach(t => {
     const card = document.createElement("article");
     card.className = "bg-card border border-hairline rounded-xl p-3 shadow-sm group hover:border-clay/30 transition-all";
     const diasTexto = (t.dias || []).length
@@ -702,7 +784,7 @@ let editorTemplateId = null;
 
 function openEditor(templateId) {
   editorTemplateId = templateId;
-  const t = TEMPLATES.find(x => x.id === templateId);
+  const t = treinosDoPerfilAtual().find(x => x.id === templateId);
   document.getElementById("editorFicha").textContent = t.ficha;
   const input = document.getElementById("editorTitleInput");
   input.value = t.nome;
@@ -713,7 +795,7 @@ function openEditor(templateId) {
 }
 
 function renderEditorWeekdays() {
-  const t = TEMPLATES.find(x => x.id === editorTemplateId);
+  const t = treinosDoPerfilAtual().find(x => x.id === editorTemplateId);
   const wrap = document.getElementById("editorWeekdays");
   wrap.innerHTML = "";
   WEEKDAY_LABELS.forEach((label, idx) => {
@@ -734,7 +816,7 @@ function renderEditorWeekdays() {
 }
 
 function createNewTemplate() {
-  const nextLetter = String.fromCharCode(65 + TEMPLATES.length); // A, B, C, D...
+  const nextLetter = String.fromCharCode(65 + treinosDoPerfilAtual().length); // A, B, C, D...
   const novo = {
     id: "custom-" + Date.now(),
     nome: "Novo Treino",
@@ -743,14 +825,14 @@ function createNewTemplate() {
     dias: [],
     exercicios: []
   };
-  TEMPLATES.push(novo);
-  saveTemplate(novo);
+  treinosDoPerfilAtual().push(novo);
+  saveTemplate(state.perfilAtual, novo);
   openEditor(novo.id);
 }
 document.getElementById("createTemplateBtn").addEventListener("click", createNewTemplate);
 
 function renderEditorList() {
-  const t = TEMPLATES.find(x => x.id === editorTemplateId);
+  const t = treinosDoPerfilAtual().find(x => x.id === editorTemplateId);
   const list = document.getElementById("editorExerciseList");
   list.innerHTML = "";
 
@@ -861,29 +943,30 @@ function renderEditorList() {
 }
 
 document.getElementById("editorBackBtn").addEventListener("click", () => {
-  const t = TEMPLATES.find(x => x.id === editorTemplateId);
-  if (t) saveTemplate(t);
+  const t = treinosDoPerfilAtual().find(x => x.id === editorTemplateId);
+  if (t) saveTemplate(state.perfilAtual, t);
   renderTemplateList();
   renderHoje();
   showScreen("treinos");
 });
 document.getElementById("editorSaveBtn").addEventListener("click", () => {
-  const t = TEMPLATES.find(x => x.id === editorTemplateId);
+  const t = treinosDoPerfilAtual().find(x => x.id === editorTemplateId);
   renderTemplateList();
   renderHoje();
   showToast("Treino salvo!");
   showScreen("treinos");
-  saveTemplate(t);
+  saveTemplate(state.perfilAtual, t);
 });
 document.getElementById("editorDeleteBtn").addEventListener("click", () => {
   if (!confirm("Excluir esta ficha de treino?")) return;
   const idToDelete = editorTemplateId;
-  const idx = TEMPLATES.findIndex(t => t.id === idToDelete);
-  if (idx >= 0) TEMPLATES.splice(idx, 1);
+  const perfilDaFicha = state.perfilAtual;
+  const idx = treinosDoPerfilAtual().findIndex(t => t.id === idToDelete);
+  if (idx >= 0) treinosDoPerfilAtual().splice(idx, 1);
   renderTemplateList();
   renderHoje();
   showScreen("treinos");
-  deleteTemplateRemote(idToDelete);
+  deleteTemplateRemote(perfilDaFicha, idToDelete);
 });
 
 /* =========================================================
@@ -912,7 +995,7 @@ function startExecution(templateId) {
 }
 
 function currentTemplate() {
-  return TEMPLATES.find(t => t.id === currentProfile().execucao.templateId);
+  return treinosDoPerfilAtual().find(t => t.id === currentProfile().execucao.templateId);
 }
 function currentExercicioCfg() {
   return currentTemplate().exercicios[currentProfile().execucao.exercicioIndex];
@@ -1185,22 +1268,30 @@ document.querySelectorAll(".cardio-type-btn").forEach(btn => {
   btn.addEventListener("click", () => {
     state.cardioTipo = btn.dataset.type;
     document.querySelectorAll(".cardio-type-btn").forEach(b => {
+      const isActive = b === btn;
       // usa "i, svg" porque o lucide já trocou os <i data-lucide> originais
       // por <svg> assim que a tela carregou — buscar só "i" não encontrava
       // mais nada e a cor do ícone nunca era atualizada
       const icon = b.querySelector("i, svg");
       const label = b.querySelector("span");
-      b.classList.remove("border-2", "border-clay");
-      b.classList.add("border", "border-hairline");
-      if (icon) { icon.classList.remove("text-clay"); icon.classList.add("text-muted"); }
-      if (label) { label.classList.remove("text-ink"); label.classList.add("text-muted"); }
+      b.classList.toggle("border-2", isActive);
+      b.classList.toggle("border-clay", isActive);
+      b.classList.toggle("border", !isActive);
+      b.classList.toggle("border-hairline", !isActive);
+      // o hover sutil só faz sentido no botão ainda não selecionado — no
+      // selecionado ele brigava com a borda sólida e "piscava" ao tocar,
+      // dando a impressão de que a cor certa só "voltava" quando o dedo/
+      // mouse saía do botão. Normaliza isso em todos os botões a cada clique.
+      b.classList.toggle("hover:border-clay/30", !isActive);
+      if (icon) {
+        icon.classList.toggle("text-clay", isActive);
+        icon.classList.toggle("text-muted", !isActive);
+      }
+      if (label) {
+        label.classList.toggle("text-ink", isActive);
+        label.classList.toggle("text-muted", !isActive);
+      }
     });
-    const icon = btn.querySelector("i, svg");
-    const label = btn.querySelector("span");
-    btn.classList.remove("border", "border-hairline");
-    btn.classList.add("border-2", "border-clay");
-    if (icon) { icon.classList.remove("text-muted"); icon.classList.add("text-clay"); }
-    if (label) { label.classList.remove("text-muted"); label.classList.add("text-ink"); }
   });
 });
 
@@ -1214,11 +1305,14 @@ document.querySelectorAll(".intensity-btn").forEach(btn => {
   btn.addEventListener("click", () => {
     state.cardioIntensidade = btn.dataset.intensity;
     document.querySelectorAll(".intensity-btn").forEach(b => {
-      b.classList.remove("bg-paper", "text-ink");
-      b.classList.add("text-muted");
+      const isActive = b === btn;
+      b.classList.toggle("bg-paper", isActive);
+      b.classList.toggle("text-ink", isActive);
+      b.classList.toggle("text-muted", !isActive);
+      // mesma correção do card de tipo de cardio: só o botão não-selecionado
+      // deve ter o hover, senão a cor "briga" com o estado ativo ao tocar
+      b.classList.toggle("hover:text-ink", !isActive);
     });
-    btn.classList.add("bg-paper", "text-ink");
-    btn.classList.remove("text-muted");
   });
 });
 
