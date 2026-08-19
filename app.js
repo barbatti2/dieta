@@ -81,8 +81,8 @@ const PROFILES = {
     cardioLog: [],
     historicoLog: [],
     concluidosPorDia: {}, // { "AAAA-MM-DD": ["a", "b"] } — quais fichas foram concluídas em cada dia
-    hojeTemplateId: null, // qual ficha (A/B/C) esse perfil escolheu (ou o app sugeriu) como treino de hoje
-    hojeTemplateDia: null, // "AAAA-MM-DD" do dia em que hojeTemplateId foi definido — vira a chave pra saber se precisa reavaliar a sugestão do dia
+    hojeTemplateIds: [], // todas as fichas (A/B/C...) que esse perfil escolheu (ou o app sugeriu) como treinos de hoje
+    hojeTemplateDia: null, // "AAAA-MM-DD" do dia em que hojeTemplateIds foi definido — vira a chave pra saber se precisa reavaliar a sugestão do dia
     execucao: null // treino em andamento desse perfil (independente do outro perfil)
   },
   parceira: {
@@ -91,7 +91,7 @@ const PROFILES = {
     cardioLog: [],
     historicoLog: [],
     concluidosPorDia: {},
-    hojeTemplateId: null,
+    hojeTemplateIds: [],
     hojeTemplateDia: null,
     execucao: null
   }
@@ -182,16 +182,23 @@ function normalizeProfile(p) {
   if (!Array.isArray(p.historicoLog)) p.historicoLog = [];
   if (!Array.isArray(p.cardioLog)) p.cardioLog = [];
   if (typeof p.hojeTemplateDia !== "string") p.hojeTemplateDia = null;
+  // formato antigo guardava só uma ficha (hojeTemplateId, string); migra pro
+  // novo formato em lista, que suporta várias fichas marcadas pro mesmo dia
+  if (typeof p.hojeTemplateId === "string" && p.hojeTemplateId) {
+    p.hojeTemplateIds = [p.hojeTemplateId];
+  }
+  if (!Array.isArray(p.hojeTemplateIds)) p.hojeTemplateIds = [];
+  delete p.hojeTemplateId;
   delete p.concluidosHoje;
   delete p.streak;
 }
 
-// treino cuja programação de dias da semana (definida na ficha, em "treinos")
-// inclui o dia de hoje. Se mais de uma ficha estiver marcada pro mesmo dia,
-// usa a primeira encontrada.
-function getTreinoDoDiaAtual() {
+// todas as fichas cuja programação de dias da semana (definida na ficha, em
+// "treinos") inclui o dia de hoje — uma ficha pode ter vários dias marcados,
+// e mais de uma ficha pode estar marcada pro mesmo dia.
+function getTreinosDoDiaAtual() {
   const diaSemana = new Date().getDay();
-  return TEMPLATES.find(t => Array.isArray(t.dias) && t.dias.includes(diaSemana)) || null;
+  return TEMPLATES.filter(t => Array.isArray(t.dias) && t.dias.includes(diaSemana));
 }
 
 // roda uma única vez, no carregamento do app: busca tudo que já existe no
@@ -236,7 +243,9 @@ let state = {
   calYear: AGORA.getFullYear(),
   calSelectedDay: null,
   cardioTipo: "esteira",
-  cardioIntensidade: "leve"
+  cardioIntensidade: "leve",
+  escolhaManual: false, // true enquanto o usuário está vendo a lista de todas as fichas pra trocar/adicionar um treino de hoje
+  escolhaManualSlot: null // id da ficha sendo substituída (trocar), ou null se é uma adição nova
 };
 
 function currentProfile() {
@@ -313,6 +322,7 @@ document.addEventListener("click", (e) => {
   if (!btn) return;
   if (btn.dataset.profile === state.perfilAtual) return;
   state.perfilAtual = btn.dataset.profile;
+  state.escolhaManual = false;
   renderAll();
 });
 
@@ -362,30 +372,38 @@ function renderTodayWorkout() {
   const container = document.getElementById("todayWorkoutCard");
   const titleEl = document.getElementById("todayWorkoutTitle");
 
-  // virou o dia desde a última vez que essa ficha foi definida/sugerida:
+  // virou o dia desde a última vez que os treinos foram definidos/sugeridos:
   // esquece a escolha antiga pra reavaliar com base na programação de hoje
-  if (p.hojeTemplateId && p.hojeTemplateDia !== todayStr()) {
-    p.hojeTemplateId = null;
+  if (p.hojeTemplateIds.length && p.hojeTemplateDia !== todayStr()) {
+    p.hojeTemplateIds = [];
     p.hojeTemplateDia = null;
   }
 
-  // ninguém escolheu manualmente ainda: tenta sugerir com base no dia da
-  // semana programado em cada ficha (aba "treinos")
-  if (!p.hojeTemplateId) {
-    const sugestao = getTreinoDoDiaAtual();
-    if (sugestao) {
-      p.hojeTemplateId = sugestao.id;
+  // ninguém escolheu manualmente ainda e não estamos no meio de uma troca:
+  // tenta sugerir com base no dia da semana programado em cada ficha (aba
+  // "treinos") — junta TODAS as fichas que batem com o dia de hoje, não só
+  // a primeira encontrada
+  if (!p.hojeTemplateIds.length && !state.escolhaManual) {
+    const sugestoes = getTreinosDoDiaAtual();
+    if (sugestoes.length) {
+      p.hojeTemplateIds = sugestoes.map(t => t.id);
       p.hojeTemplateDia = todayStr();
       saveProfile(state.perfilAtual);
     }
   }
 
-  // nenhuma ficha programada pra hoje: mostra o seletor manual
-  if (!p.hojeTemplateId) {
-    if (titleEl) titleEl.textContent = "Qual treino de hoje?";
+  // usuário clicou em "Deseja alterar?" (troca uma ficha específica) ou em
+  // "Adicionar outro treino" (soma uma nova): mostra a lista de fichas ainda
+  // não escolhidas pra hoje. Não mexe em p.hojeTemplateIds aqui — assim, se
+  // ele desistir, dá pra voltar exatamente pros treinos que já estavam
+  // definidos pra hoje, sem cair de novo na sugestão automática do dia.
+  if (state.escolhaManual) {
+    const slotId = state.escolhaManualSlot;
+    if (titleEl) titleEl.textContent = slotId ? "Trocar por qual treino?" : "Adicionar qual treino?";
     container.innerHTML = `<div class="flex flex-col gap-3" id="hojeTemplatePicker"></div>`;
     const picker = document.getElementById("hojeTemplatePicker");
-    TEMPLATES.forEach((t, idx) => {
+    const disponiveis = TEMPLATES.filter(t => t.id === slotId || !p.hojeTemplateIds.includes(t.id));
+    disponiveis.forEach((t, idx) => {
       const btn = document.createElement("button");
       btn.className = "today-pick-btn ficha-card w-full flex items-center gap-4 rounded-2xl p-4 text-left transition-all active:scale-[0.98]";
       btn.innerHTML = `
@@ -397,85 +415,140 @@ function renderTodayWorkout() {
         <i data-lucide="chevron-right" class="text-clay flex-shrink-0"></i>
       `;
       btn.addEventListener("click", () => {
-        p.hojeTemplateId = t.id;
+        if (slotId) {
+          const i = p.hojeTemplateIds.indexOf(slotId);
+          if (i >= 0) p.hojeTemplateIds.splice(i, 1, t.id);
+          else p.hojeTemplateIds.push(t.id);
+        } else {
+          p.hojeTemplateIds.push(t.id);
+        }
         p.hojeTemplateDia = todayStr();
+        state.escolhaManual = false;
+        state.escolhaManualSlot = null;
         renderTodayWorkout();
         saveProfile(state.perfilAtual);
       });
       picker.appendChild(btn);
     });
+
+    // só faz sentido "voltar" se já havia algum treino definido pra hoje
+    if (p.hojeTemplateIds.length) {
+      const backBtn = document.createElement("button");
+      backBtn.id = "cancelarTrocaBtn";
+      backBtn.className = "w-full text-xs font-bold text-gray-500 uppercase tracking-widest py-2 text-center";
+      backBtn.textContent = "Voltar pros treinos de hoje";
+      backBtn.addEventListener("click", () => {
+        state.escolhaManual = false;
+        state.escolhaManualSlot = null;
+        renderTodayWorkout();
+      });
+      picker.appendChild(backBtn);
+    }
+
     refreshIcons();
     return;
   }
 
-  const t = TEMPLATES.find(x => x.id === p.hojeTemplateId);
-
-  // a ficha escolhida foi excluída no editor: volta pro seletor
-  if (!t) {
-    p.hojeTemplateId = null;
-    p.hojeTemplateDia = null;
+  // nenhuma ficha programada pra hoje e nada escolhido ainda: cai direto no
+  // seletor manual (modo "adicionar", sem slot pra substituir)
+  if (!p.hojeTemplateIds.length) {
+    state.escolhaManual = true;
+    state.escolhaManualSlot = null;
     renderTodayWorkout();
     return;
   }
 
-  if (titleEl) titleEl.textContent = "Seu treino de hoje";
-
-  const concluidosHoje = p.concluidosPorDia[todayStr()] || [];
-  const concluido = concluidosHoje.includes(t.id);
-  const emAndamento = p.execucao && p.execucao.templateId === t.id;
-
-  if (concluido) {
-    container.innerHTML = `
-      <button id="reabrirTreinoBtn" class="w-full rounded-2xl p-4 flex items-center gap-3 text-left transition-all active:scale-[0.98]" style="background:#101913;border:1px solid #234032;">
-        <div class="w-9 h-9 bg-emerald rounded-full flex items-center justify-center text-white flex-shrink-0">
-          <i data-lucide="check" class="text-xs"></i>
-        </div>
-        <div class="min-w-0 flex-1">
-          <span class="text-[10px] font-bold text-emerald uppercase tracking-[0.15em]">${t.ficha} · Concluído</span>
-          <h3 class="text-base font-extrabold text-white truncate">${t.nome}</h3>
-        </div>
-        <i data-lucide="rotate-ccw" class="text-emerald text-sm flex-shrink-0"></i>
-      </button>
-      <button id="trocarTreinoBtn" class="mt-3 text-xs font-bold text-clay uppercase tracking-widest">Deseja alterar?</button>
-    `;
-    document.getElementById("reabrirTreinoBtn").addEventListener("click", () => reabrirTreino(t));
-    document.getElementById("trocarTreinoBtn").addEventListener("click", (e) => {
-      e.stopPropagation();
-      p.hojeTemplateId = null;
-      p.hojeTemplateDia = null;
-      renderTodayWorkout();
-      saveProfile(state.perfilAtual);
-    });
-    refreshIcons();
-    return;
-  }
-
-  container.innerHTML = `
-    <div class="ficha-card rounded-2xl p-4">
-      <div class="flex items-center justify-between mb-3">
-        <div>
-          <span class="text-[10px] font-bold text-clay uppercase tracking-[0.2em]">${t.ficha}</span>
-          <h3 class="text-lg font-extrabold text-white uppercase tracking-tight">${t.nome}</h3>
-          ${emAndamento ? `<p class="text-[11px] text-gray-500 mt-0.5">Exercício ${p.execucao.exercicioIndex + 1} de ${t.exercicios.length}</p>` : ""}
-        </div>
-        <div class="w-10 h-10 rounded-xl flex items-center justify-center text-clay flex-shrink-0" style="background:#1C1C1E;">
-          <i data-lucide="dumbbell"></i>
-        </div>
-      </div>
-      <button class="start-today-btn w-full bg-clay text-white font-bold py-2.5 rounded-xl text-sm active:scale-[0.98] transition-all" data-template-id="${t.id}">
-        ${emAndamento ? "Continuar Treino" : "Iniciar Treino"}
-      </button>
-      <button id="trocarTreinoBtn" class="mt-2 w-full text-xs font-bold text-gray-500 uppercase tracking-widest py-1">Deseja alterar?</button>
-    </div>
-  `;
-
-  container.querySelector(".start-today-btn").addEventListener("click", () => startExecution(t.id));
-  document.getElementById("trocarTreinoBtn").addEventListener("click", () => {
-    p.hojeTemplateId = null;
-    p.hojeTemplateDia = null;
-    renderTodayWorkout();
+  // alguma ficha escolhida foi excluída no editor desde então: tira da lista
+  const validos = p.hojeTemplateIds.filter(id => TEMPLATES.some(t => t.id === id));
+  if (validos.length !== p.hojeTemplateIds.length) {
+    p.hojeTemplateIds = validos;
     saveProfile(state.perfilAtual);
+    if (!validos.length) {
+      renderTodayWorkout();
+      return;
+    }
+  }
+
+  if (titleEl) {
+    titleEl.textContent = p.hojeTemplateIds.length > 1 ? "Seus treinos de hoje" : "Seu treino de hoje";
+  }
+
+  container.innerHTML = "";
+  const concluidosHoje = p.concluidosPorDia[todayStr()] || [];
+
+  p.hojeTemplateIds.forEach(id => {
+    const t = TEMPLATES.find(x => x.id === id);
+    if (!t) return;
+
+    const concluido = concluidosHoje.includes(t.id);
+    const emAndamento = p.execucao && p.execucao.templateId === t.id;
+    const card = document.createElement("div");
+    card.className = "mb-3";
+
+    if (concluido) {
+      card.innerHTML = `
+        <button class="reabrirTreinoBtn w-full rounded-2xl p-4 flex items-center gap-3 text-left transition-all active:scale-[0.98]" style="background:#101913;border:1px solid #234032;">
+          <div class="w-9 h-9 bg-emerald rounded-full flex items-center justify-center text-white flex-shrink-0">
+            <i data-lucide="check" class="text-xs"></i>
+          </div>
+          <div class="min-w-0 flex-1">
+            <span class="text-[10px] font-bold text-emerald uppercase tracking-[0.15em]">${t.ficha} · Concluído</span>
+            <h3 class="text-base font-extrabold text-white truncate">${t.nome}</h3>
+          </div>
+          <i data-lucide="rotate-ccw" class="text-emerald text-sm flex-shrink-0"></i>
+        </button>
+        <button class="trocarTreinoBtn mt-3 text-xs font-bold text-clay uppercase tracking-widest">Deseja alterar?</button>
+      `;
+      card.querySelector(".reabrirTreinoBtn").addEventListener("click", () => reabrirTreino(t));
+      card.querySelector(".trocarTreinoBtn").addEventListener("click", (e) => {
+        e.stopPropagation();
+        state.escolhaManual = true;
+        state.escolhaManualSlot = t.id;
+        renderTodayWorkout();
+      });
+    } else {
+      card.innerHTML = `
+        <div class="ficha-card rounded-2xl p-4">
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <span class="text-[10px] font-bold text-clay uppercase tracking-[0.2em]">${t.ficha}</span>
+              <h3 class="text-lg font-extrabold text-white uppercase tracking-tight">${t.nome}</h3>
+              ${emAndamento ? `<p class="text-[11px] text-gray-500 mt-0.5">Exercício ${p.execucao.exercicioIndex + 1} de ${t.exercicios.length}</p>` : ""}
+            </div>
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center text-clay flex-shrink-0" style="background:#1C1C1E;">
+              <i data-lucide="dumbbell"></i>
+            </div>
+          </div>
+          <button class="start-today-btn w-full bg-clay text-white font-bold py-2.5 rounded-xl text-sm active:scale-[0.98] transition-all" data-template-id="${t.id}">
+            ${emAndamento ? "Continuar Treino" : "Iniciar Treino"}
+          </button>
+          <button class="trocarTreinoBtn mt-2 w-full text-xs font-bold text-gray-500 uppercase tracking-widest py-1">Deseja alterar?</button>
+        </div>
+      `;
+      card.querySelector(".start-today-btn").addEventListener("click", () => startExecution(t.id));
+      card.querySelector(".trocarTreinoBtn").addEventListener("click", () => {
+        state.escolhaManual = true;
+        state.escolhaManualSlot = t.id;
+        renderTodayWorkout();
+      });
+    }
+
+    container.appendChild(card);
   });
+
+  // permite somar mais uma ficha além das já programadas/escolhidas pra hoje
+  if (p.hojeTemplateIds.length < TEMPLATES.length) {
+    const addBtn = document.createElement("button");
+    addBtn.className = "w-full text-xs font-bold text-clay uppercase tracking-widest py-2 text-center";
+    addBtn.textContent = "+ Adicionar outro treino";
+    addBtn.addEventListener("click", () => {
+      state.escolhaManual = true;
+      state.escolhaManualSlot = null;
+      renderTodayWorkout();
+    });
+    container.appendChild(addBtn);
+  }
+
   refreshIcons();
 }
 
@@ -520,7 +593,7 @@ function reabrirTreino(t) {
     pesosPorExercicio: {},
     log: []
   };
-  p.hojeTemplateId = t.id;
+  if (!p.hojeTemplateIds.includes(t.id)) p.hojeTemplateIds.push(t.id);
   showScreen("execucao");
   renderExecucao();
   renderHistorico();
@@ -773,8 +846,9 @@ document.getElementById("editorDeleteBtn").addEventListener("click", () => {
 let highlighter = null;
 
 function startExecution(templateId) {
-  currentProfile().hojeTemplateId = templateId;
-  currentProfile().hojeTemplateDia = todayStr();
+  const cp = currentProfile();
+  if (!cp.hojeTemplateIds.includes(templateId)) cp.hojeTemplateIds.push(templateId);
+  cp.hojeTemplateDia = todayStr();
   // se já tem um treino dessa mesma ficha em andamento, retoma de onde parou;
   // só começa do zero se for uma ficha diferente ou não houver nada rolando
   if (!currentProfile().execucao || currentProfile().execucao.templateId !== templateId) {
