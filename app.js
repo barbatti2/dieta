@@ -792,6 +792,9 @@ function renderTemplateList() {
 
 let editorTemplateId = null;
 let editorExpandedGroups = new Set();
+// controla se o catálogo completo (pra adicionar novos exercícios) está
+// aberto — começa sempre fechado, mostrando só os exercícios já salvos
+let editorShowCatalog = false;
 
 function openEditor(templateId) {
   editorTemplateId = templateId;
@@ -809,6 +812,7 @@ function openEditor(templateId) {
       .filter(group => t.exercicios.some(cfg => EXERCISES[cfg.id]?.grupo === group.id))
       .map(group => group.id)
   );
+  editorShowCatalog = false;
 
   renderEditorList();
   showScreen("editor");
@@ -851,10 +855,148 @@ function createNewTemplate() {
 }
 document.getElementById("createTemplateBtn").addEventListener("click", createNewTemplate);
 
+// monta o card de um exercício (linha + painel de séries/reps/descanso
+// quando incluído na ficha). Reaproveitado tanto na lista "exercícios da
+// ficha" quanto no catálogo completo usado pra adicionar novos.
+function buildExerciseCard(t, id, ex, cfg) {
+  const included = !!cfg;
+
+  const wrap = document.createElement("div");
+  wrap.className = "mb-2";
+
+  const row = document.createElement("button");
+  row.className = `w-full flex items-center justify-between gap-3 p-3.5 rounded-xl border transition-all text-left ${
+    included ? "border-clay bg-claySoft/10 rounded-b-none border-b-0" : "border-hairline bg-card"
+  }`;
+  const musclesText = [...ex.primary, ...ex.secondary].map(m => muscleLabels[m] || m).join(", ");
+  row.innerHTML = `
+    <div class="w-11 h-11 rounded-lg overflow-hidden bg-paper border border-hairline flex-shrink-0">
+      <img src="${ex.imagem || ""}" alt="" class="w-full h-full object-cover">
+    </div>
+    <div class="min-w-0 flex-1">
+      <p class="text-sm font-extrabold uppercase tracking-tight truncate">${ex.nome}</p>
+      <p class="text-[11px] text-muted truncate">${musclesText} · ${ex.equipamento}</p>
+    </div>
+    <div class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
+      included ? "bg-clay text-white" : "border border-hairline text-transparent"
+    }">
+      <i data-lucide="${included ? "x" : "check"}" class="text-[10px]"></i>
+    </div>
+  `;
+  row.addEventListener("click", () => {
+    const idx = t.exercicios.findIndex(e => e.id === id);
+    if (idx >= 0) t.exercicios.splice(idx, 1);
+    else t.exercicios.push(exCfg(id, 3, 10, 60));
+    renderEditorList();
+  });
+  wrap.appendChild(row);
+
+  // painel de séries / repetições / descanso — só aparece quando o
+  // exercício está incluído na ficha
+  if (included) {
+    const panel = document.createElement("div");
+    panel.className = "border border-t-0 border-clay bg-claySoft/10 rounded-b-xl px-3.5 py-3 flex flex-wrap items-center gap-x-5 gap-y-2";
+    panel.innerHTML = `
+      <div class="flex items-center gap-2">
+        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Séries</span>
+        <button type="button" class="cfg-series-dir w-6 h-6 rounded-full bg-[#1C1C1E] border border-hairline text-white flex items-center justify-center text-xs" data-dir="-1">−</button>
+        <span class="w-4 text-center text-sm font-extrabold text-white cfg-series-val">${cfg.series}</span>
+        <button type="button" class="cfg-series-dir w-6 h-6 rounded-full bg-[#1C1C1E] border border-hairline text-white flex items-center justify-center text-xs" data-dir="1">+</button>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Reps</span>
+        <input type="text" class="cfg-reps-input w-20 bg-[#1C1C1E] border border-hairline rounded-md px-2 py-1 text-center text-sm font-extrabold text-white outline-none focus:border-clay" value="${repsToInputValue(cfg.reps)}" placeholder="10 ou 12+10+8">
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Descanso</span>
+        <button type="button" class="cfg-rest-dir w-6 h-6 rounded-full bg-[#1C1C1E] border border-hairline text-white flex items-center justify-center text-xs" data-dir="-1">−</button>
+        <span class="w-9 text-center text-sm font-extrabold text-white cfg-rest-val">${cfg.descanso}s</span>
+        <button type="button" class="cfg-rest-dir w-6 h-6 rounded-full bg-[#1C1C1E] border border-hairline text-white flex items-center justify-center text-xs" data-dir="1">+</button>
+      </div>
+    `;
+
+    panel.querySelectorAll(".cfg-series-dir").forEach(b => {
+      b.addEventListener("click", () => {
+        const dir = parseInt(b.dataset.dir, 10);
+        cfg.series = Math.max(1, cfg.series + dir);
+        // se as reps já são customizadas por série, mantém o array do
+        // mesmo tamanho que o número de séries
+        if (Array.isArray(cfg.reps)) {
+          const last = cfg.reps[cfg.reps.length - 1] ?? 10;
+          while (cfg.reps.length < cfg.series) cfg.reps.push(last);
+          while (cfg.reps.length > cfg.series) cfg.reps.pop();
+        }
+        renderEditorList();
+      });
+    });
+
+    panel.querySelectorAll(".cfg-rest-dir").forEach(b => {
+      b.addEventListener("click", () => {
+        const dir = parseInt(b.dataset.dir, 10);
+        cfg.descanso = Math.max(0, cfg.descanso + dir * 15);
+        renderEditorList();
+      });
+    });
+
+    const repsInput = panel.querySelector(".cfg-reps-input");
+    repsInput.addEventListener("change", () => {
+      cfg.reps = parseRepsInput(repsInput.value);
+      if (Array.isArray(cfg.reps)) cfg.series = cfg.reps.length;
+      renderEditorList();
+    });
+
+    wrap.appendChild(panel);
+  }
+
+  return wrap;
+}
+
 function renderEditorList() {
   const t = treinosDoPerfilAtual().find(x => x.id === editorTemplateId);
   const list = document.getElementById("editorExerciseList");
   list.innerHTML = "";
+
+  // ---- exercícios já salvos nessa ficha específica ----
+  const savedHeader = document.createElement("p");
+  savedHeader.className = "text-[10px] font-bold text-muted uppercase tracking-[0.2em] px-2 pb-1";
+  savedHeader.textContent = "Exercícios da ficha";
+  list.appendChild(savedHeader);
+
+  if (t.exercicios.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "text-xs text-muted px-2 pb-3";
+    empty.textContent = "Nenhum exercício adicionado ainda.";
+    list.appendChild(empty);
+  } else {
+    t.exercicios.forEach(cfg => {
+      const ex = EXERCISES[cfg.id];
+      if (!ex) return;
+      list.appendChild(buildExerciseCard(t, cfg.id, ex, cfg));
+    });
+  }
+
+  // ---- botão pra abrir/fechar o catálogo completo e incluir mais exercícios ----
+  const toggleBtn = document.createElement("button");
+  toggleBtn.type = "button";
+  toggleBtn.className = "w-full flex items-center justify-center gap-2 mt-1 py-3 rounded-xl border border-dashed border-hairline text-muted hover:text-clay hover:border-clay/40 transition-all text-[11px] font-bold uppercase tracking-widest";
+  toggleBtn.innerHTML = editorShowCatalog
+    ? `<i data-lucide="chevron-up" class="text-sm"></i> Fechar lista de exercícios`
+    : `<i data-lucide="circle-plus" class="text-sm"></i> Adicionar exercícios`;
+  toggleBtn.addEventListener("click", () => {
+    editorShowCatalog = !editorShowCatalog;
+    renderEditorList();
+  });
+  list.appendChild(toggleBtn);
+
+  if (!editorShowCatalog) {
+    refreshIcons();
+    return;
+  }
+
+  // ---- catálogo completo, agrupado por categoria (acordeão) ----
+  const catalogWrap = document.createElement("div");
+  catalogWrap.className = "mt-3";
+  list.appendChild(catalogWrap);
 
   GROUPS.forEach(group => {
     const idsDoGrupo = Object.entries(EXERCISES).filter(([, ex]) => ex.grupo === group.id);
@@ -868,117 +1010,29 @@ function renderEditorList() {
     // o usuário tocar pra expandir
     const header = document.createElement("button");
     header.type = "button";
-    header.className = "w-full flex items-center justify-between gap-2 px-2 pt-4 pb-1 first:pt-0";
+    header.className = "w-full flex items-center justify-between gap-2 px-2 pt-5 pb-2 first:pt-1";
     header.innerHTML = `
-      <span class="flex items-center gap-2">
-        <span class="text-[10px] font-bold text-muted uppercase tracking-[0.2em]">${group.nome}</span>
-        ${includedCount > 0 ? `<span class="text-[9px] font-bold text-clay bg-claySoft/10 border border-clay/30 rounded-full px-2 py-0.5">${includedCount}</span>` : ""}
+      <span class="flex items-center gap-2.5">
+        <span class="text-sm font-extrabold text-ink uppercase tracking-[0.08em]">${group.nome}</span>
+        ${includedCount > 0 ? `<span class="text-[10px] font-bold text-clay bg-claySoft/10 border border-clay/30 rounded-full px-2 py-0.5 leading-none">${includedCount}</span>` : ""}
       </span>
-      <i data-lucide="chevron-down" class="text-muted text-sm transition-transform ${expanded ? "rotate-180" : ""}"></i>
+      <i data-lucide="chevron-down" class="text-muted text-base transition-transform ${expanded ? "rotate-180" : ""}"></i>
     `;
     header.addEventListener("click", () => {
       if (editorExpandedGroups.has(group.id)) editorExpandedGroups.delete(group.id);
       else editorExpandedGroups.add(group.id);
       renderEditorList();
     });
-    list.appendChild(header);
+    catalogWrap.appendChild(header);
 
     if (!expanded) return;
 
     idsDoGrupo.forEach(([id, ex]) => {
       const cfg = t.exercicios.find(e => e.id === id);
-      const included = !!cfg;
-
-      const wrap = document.createElement("div");
-      wrap.className = "mb-2";
-
-      const row = document.createElement("button");
-      row.className = `w-full flex items-center justify-between gap-3 p-3.5 rounded-xl border transition-all text-left ${
-        included ? "border-clay bg-claySoft/10 rounded-b-none border-b-0" : "border-hairline bg-card"
-      }`;
-      const musclesText = [...ex.primary, ...ex.secondary].map(m => muscleLabels[m] || m).join(", ");
-      row.innerHTML = `
-        <div class="w-11 h-11 rounded-lg overflow-hidden bg-paper border border-hairline flex-shrink-0">
-          <img src="${ex.imagem || ""}" alt="" class="w-full h-full object-cover">
-        </div>
-        <div class="min-w-0 flex-1">
-          <p class="text-sm font-extrabold uppercase tracking-tight truncate">${ex.nome}</p>
-          <p class="text-[11px] text-muted truncate">${musclesText} · ${ex.equipamento}</p>
-        </div>
-        <div class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
-          included ? "bg-clay text-white" : "border border-hairline text-transparent"
-        }">
-          <i data-lucide="check" class="text-[10px]"></i>
-        </div>
-      `;
-      row.addEventListener("click", () => {
-        const idx = t.exercicios.findIndex(e => e.id === id);
-        if (idx >= 0) t.exercicios.splice(idx, 1);
-        else t.exercicios.push(exCfg(id, 3, 10, 60));
-        renderEditorList();
-      });
-      wrap.appendChild(row);
-
-      // painel de séries / repetições / descanso — só aparece quando o
-      // exercício está incluído na ficha
-      if (included) {
-        const panel = document.createElement("div");
-        panel.className = "border border-t-0 border-clay bg-claySoft/10 rounded-b-xl px-3.5 py-3 flex flex-wrap items-center gap-x-5 gap-y-2";
-        panel.innerHTML = `
-          <div class="flex items-center gap-2">
-            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Séries</span>
-            <button type="button" class="cfg-series-dir w-6 h-6 rounded-full bg-[#1C1C1E] border border-hairline text-white flex items-center justify-center text-xs" data-dir="-1">−</button>
-            <span class="w-4 text-center text-sm font-extrabold text-white cfg-series-val">${cfg.series}</span>
-            <button type="button" class="cfg-series-dir w-6 h-6 rounded-full bg-[#1C1C1E] border border-hairline text-white flex items-center justify-center text-xs" data-dir="1">+</button>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Reps</span>
-            <input type="text" class="cfg-reps-input w-20 bg-[#1C1C1E] border border-hairline rounded-md px-2 py-1 text-center text-sm font-extrabold text-white outline-none focus:border-clay" value="${repsToInputValue(cfg.reps)}" placeholder="10 ou 12+10+8">
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Descanso</span>
-            <button type="button" class="cfg-rest-dir w-6 h-6 rounded-full bg-[#1C1C1E] border border-hairline text-white flex items-center justify-center text-xs" data-dir="-1">−</button>
-            <span class="w-9 text-center text-sm font-extrabold text-white cfg-rest-val">${cfg.descanso}s</span>
-            <button type="button" class="cfg-rest-dir w-6 h-6 rounded-full bg-[#1C1C1E] border border-hairline text-white flex items-center justify-center text-xs" data-dir="1">+</button>
-          </div>
-        `;
-
-        panel.querySelectorAll(".cfg-series-dir").forEach(b => {
-          b.addEventListener("click", () => {
-            const dir = parseInt(b.dataset.dir, 10);
-            cfg.series = Math.max(1, cfg.series + dir);
-            // se as reps já são customizadas por série, mantém o array do
-            // mesmo tamanho que o número de séries
-            if (Array.isArray(cfg.reps)) {
-              const last = cfg.reps[cfg.reps.length - 1] ?? 10;
-              while (cfg.reps.length < cfg.series) cfg.reps.push(last);
-              while (cfg.reps.length > cfg.series) cfg.reps.pop();
-            }
-            renderEditorList();
-          });
-        });
-
-        panel.querySelectorAll(".cfg-rest-dir").forEach(b => {
-          b.addEventListener("click", () => {
-            const dir = parseInt(b.dataset.dir, 10);
-            cfg.descanso = Math.max(0, cfg.descanso + dir * 15);
-            renderEditorList();
-          });
-        });
-
-        const repsInput = panel.querySelector(".cfg-reps-input");
-        repsInput.addEventListener("change", () => {
-          cfg.reps = parseRepsInput(repsInput.value);
-          if (Array.isArray(cfg.reps)) cfg.series = cfg.reps.length;
-          renderEditorList();
-        });
-
-        wrap.appendChild(panel);
-      }
-
-      list.appendChild(wrap);
+      catalogWrap.appendChild(buildExerciseCard(t, id, ex, cfg));
     });
   });
+
   refreshIcons();
 }
 
