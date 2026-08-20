@@ -197,6 +197,7 @@ async function deleteTemplateRemote(profileId, id) {
     await deleteDoc(doc(db, "profiles", profileId, "templates", id));
   } catch (err) {
     console.error("Não foi possível excluir a ficha no Firestore:", err);
+    showToast("Sem conexão — exclusão pode não ter sido salva");
   }
 }
 
@@ -242,8 +243,17 @@ async function carregarDadosIniciais() {
     let legacySnap = null; // busca a coleção antiga só se algum perfil precisar dela
 
     for (const profileId of Object.keys(PROFILES)) {
+      // se o documento do perfil já existe, esse perfil já passou pela
+      // inicialização antes — então a subcoleção de fichas vazia significa
+      // que o usuário excluiu tudo de propósito, e NÃO deve ser semeada de
+      // novo. Só semeia com padrão/legado na primeiríssima vez do perfil
+      // (documento ainda não existe).
+      const ref = doc(db, "profiles", profileId);
+      const snap = await getDoc(ref);
+      const perfilJaExistia = snap.exists();
+
       const templatesSnap = await getDocs(collection(db, "profiles", profileId, "templates"));
-      if (templatesSnap.empty) {
+      if (templatesSnap.empty && !perfilJaExistia) {
         if (!legacySnap) legacySnap = await getDocs(collection(db, "templates"));
         const seed = !legacySnap.empty ? legacySnap.docs.map(d => d.data()) : DEFAULT_TEMPLATES;
         const batch = writeBatch(db);
@@ -251,12 +261,12 @@ async function carregarDadosIniciais() {
         await batch.commit();
         TEMPLATES_BY_PROFILE[profileId] = cloneTemplates(seed);
       } else {
+        // pode vir vazio aqui também — e está certo ficar vazio, se o
+        // usuário excluiu todas as fichas desse perfil
         TEMPLATES_BY_PROFILE[profileId] = templatesSnap.docs.map(d => d.data());
       }
 
-      const ref = doc(db, "profiles", profileId);
-      const snap = await getDoc(ref);
-      if (snap.exists()) {
+      if (perfilJaExistia) {
         Object.assign(PROFILES[profileId], snap.data());
       } else {
         await setDoc(ref, PROFILES[profileId]);
