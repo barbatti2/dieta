@@ -1085,5 +1085,691 @@ export const EXERCISES = {
     "equipamento": "Ab Wheel",
     "nivel": "Avançado",
     "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Ab_Roller/0.jpg"
+  },
+  "supino_declinado_halteres": {
+      "nome": "Supino Declinado com Halteres",
+      "grupo": "peito",
+      "primary": [
+          "chest"
+      ],
+      "secondary": [
+          "front-deltoids",
+          "triceps"
+      ],
+      "equipamento": "Halteres",
+      "nivel": "Iniciante",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Decline_Dumbbell_Bench_Press/0.jpg"
+  },
+  "crucifixo_declinado_halteres": {
+      "nome": "Crucifixo Declinado com Halteres",
+      "grupo": "peito",
+      "primary": [
+          "chest"
+      ],
+      "secondary": [],
+      "equipamento": "Halteres",
+      "nivel": "Iniciante",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Decline_Dumbbell_Flyes/0.jpg"
+  },
+  "crucifixo_reto_cabo": {
+      "nome": "Crucifixo Reto no Cabo",
+      "grupo": "peito",
+      "primary": [
+          "chest"
+      ],
+      "secondary": [],
+      "equipamento": "Cabo",
+      "nivel": "Intermediário",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Flat_Bench_Cable_Flyes/0.jpg"
+  },
+  "supino_inclinado_cabo": {
+      "nome": "Supino Inclinado no Cabo",
+      "grupo": "peito",
+      "primary": [
+          "chest"
+      ],
+      "secondary": [
+          "front-deltoids",
+          "triceps"
+      ],
+      "equipamento": "Cabo",
+      "nivel": "Iniciante",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Cable_Chest_Press/0.jpg"
+  },
+  "mergulho_peito": {
+      "nome": "Mergulho para Peito (Dips)",
+      "grupo": "peito",
+      "primary": [
+          "chest"
+      ],
+      "secondary": [
+          "triceps"
+      ],
+      "equipamento": "Peso corporal",
+      "nivel": "Intermediário",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dips_-_Chest_Version/0.jpg"
+  },
+  "supino_halteres_pegada_neutra": {
+      "nome": "Supino com Halteres Pegada Neutra",
+      "grupo": "peito",
+      "primary": [
+          "chest"
+      ],
+      "secondary": [
+          "triceps",
+          "front-deltoids"
+      ],
+      "equipamento": "Halteres",
+      "nivel": "Iniciante",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Bench_Press_with_Neutral_Grip/0.jpg"
+  },
+  "flexao_inclinada": {
+      "nome": "Flexão Inclinada",
+      "grupo": "peito",
+      "primary": [
+          "chest"
+      ],
+      "secondary": [
+          "triceps",
+          "front-deltoids"
+      ],
+      "equipamento": "Peso corporal",
+      "nivel": "Iniciante",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Push-Up/0.jpg"
+  },
+  "remada_unilateral_barra_longa": {
+      "nome": "Remada Unilateral com Barra Longa",
+      "grupo": "costas",
+      "primary": [
+          "upper-back"
+      ],
+      "secondary": [
+          "biceps"
+      ],
+      "equipamento": "Barra",
+      "nivel": "Intermediário",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bent_Over_One-Arm_Long_Bar_Row/0.jpg"
+  },
+  "remada_invertida": {
+      "nome": "Remada Invertida (Peso Corporal)",
+      "grupo": "costas",
+      "primary": [
+          "upper-back"
+      ],
+      "secondary": [
+          "biceps"
+      ],
+      "equipamento": "Peso corporal",
+      "nivel": "Iniciante",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Inverted_Row/0.jpg"
+  },
+  "remada_unilateral_cabo_sentado": {
+      "nome": "Remada Unilateral no Cabo (Sentado)",
+      "grupo": "costas",
+      "primary": [
+          "upper-back"
+      ],
+      "secondary": [
+          "biceps"
+      ],
+      "equipamento": "Cabo",
+      "nivel": "Iniciante",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_One-arm_Cable_Pulley_Rows/0.jpg"
+  },
+  "remada_curvada_smith": {
+      "nome": "Remada Curvada no Smith",
+      "grupo": "costas",
+      "primary": [
+          "upper-back"
+      ],
+      "secondary": [
+          "biceps"
+      ],
+      "equipamento": "Smith",
+      "nivel": "Iniciante",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Bent_Over_Row/0.jpg"
+  },
+  "rack_pull": {
+      "nome": "Rack Pull",
+      "grupo": "costas",
+      "primary": [
+          "lower-back"
+      ],
+      "secondary": [
+          "gluteal",
+          "hamstring"
+      ],
+      "equipamento": "Barra",
+      "nivel": "Intermediário",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Rack_Pulls/0.jpg"
+  },
+  "superman": {
+      "nome": "Superman (Extensão Lombar no Solo)",
+      "grupo": "costas",
+      "primary": [
+          "lower-back"
+      ],
+      "secondary": [],
+      "equipamento": "Peso corporal",
+      "nivel": "Iniciante",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Superman/0.jpg"
+  },
+  "puxada_frontal_amplitude_total": {
+      "nome": "Puxada Frontal Amplitude Total",
+      "grupo": "costas",
+      "primary": [
+          "upper-back"
+      ],
+      "secondary": [
+          "biceps"
+      ],
+      "equipamento": "Cabo",
+      "nivel": "Intermediário",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Full_Range-Of-Motion_Lat_Pulldown/0.jpg"
+  },
+  "desenvolvimento_cabo": {
+      "nome": "Desenvolvimento no Cabo",
+      "grupo": "ombro",
+      "primary": [
+          "front-deltoids"
+      ],
+      "secondary": [
+          "triceps"
+      ],
+      "equipamento": "Cabo",
+      "nivel": "Iniciante",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Shoulder_Press/0.jpg"
+  },
+  "desenvolvimento_alternado_cabo": {
+      "nome": "Desenvolvimento Alternado no Cabo",
+      "grupo": "ombro",
+      "primary": [
+          "front-deltoids"
+      ],
+      "secondary": [
+          "triceps"
+      ],
+      "equipamento": "Cabo",
+      "nivel": "Intermediário",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Alternating_Cable_Shoulder_Press/0.jpg"
+  },
+  "crucifixo_invertido_cabo": {
+      "nome": "Crucifixo Invertido no Cabo",
+      "grupo": "ombro",
+      "primary": [
+          "back-deltoids"
+      ],
+      "secondary": [
+          "upper-back"
+      ],
+      "equipamento": "Cabo",
+      "nivel": "Iniciante",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Rear_Delt_Fly/0.jpg"
+  },
+  "elevacao_posterior_banco": {
+      "nome": "Elevação Posterior no Banco",
+      "grupo": "ombro",
+      "primary": [
+          "back-deltoids"
+      ],
+      "secondary": [],
+      "equipamento": "Halteres",
+      "nivel": "Iniciante",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bent_Over_Dumbbell_Rear_Delt_Raise_With_Head_On_Bench/0.jpg"
+  },
+  "encolhimento_barra": {
+      "nome": "Encolhimento com Barra",
+      "grupo": "ombro",
+      "primary": [
+          "trapezius"
+      ],
+      "secondary": [],
+      "equipamento": "Barra",
+      "nivel": "Iniciante",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Shrug/0.jpg"
+  },
+  "encolhimento_cabo": {
+      "nome": "Encolhimento no Cabo",
+      "grupo": "ombro",
+      "primary": [
+          "trapezius"
+      ],
+      "secondary": [],
+      "equipamento": "Cabo",
+      "nivel": "Iniciante",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Shrugs/0.jpg"
+  },
+  "desenvolvimento_barra_sentado": {
+      "nome": "Desenvolvimento com Barra (Sentado)",
+      "grupo": "ombro",
+      "primary": [
+          "front-deltoids"
+      ],
+      "secondary": [
+          "triceps"
+      ],
+      "equipamento": "Barra",
+      "nivel": "Intermediário",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Shoulder_Press/0.jpg"
+  },
+  "rosca_barra_w_fechada": {
+      "nome": "Rosca Barra W Pegada Fechada",
+      "grupo": "biceps",
+      "primary": [
+          "biceps"
+      ],
+      "secondary": [
+          "forearm"
+      ],
+      "equipamento": "Barra W",
+      "nivel": "Iniciante",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Close-Grip_EZ_Bar_Curl/0.jpg"
+  },
+  "rosca_barra_w": {
+      "nome": "Rosca com Barra W",
+      "grupo": "biceps",
+      "primary": [
+          "biceps"
+      ],
+      "secondary": [
+          "forearm"
+      ],
+      "equipamento": "Barra W",
+      "nivel": "Iniciante",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/EZ-Bar_Curl/0.jpg"
+  },
+  "rosca_inclinada_halteres": {
+      "nome": "Rosca Inclinada com Halteres",
+      "grupo": "biceps",
+      "primary": [
+          "biceps"
+      ],
+      "secondary": [
+          "forearm"
+      ],
+      "equipamento": "Halteres",
+      "nivel": "Intermediário",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Dumbbell_Curl/0.jpg"
+  },
+  "rosca_scott_cabo": {
+      "nome": "Rosca Scott no Cabo",
+      "grupo": "biceps",
+      "primary": [
+          "biceps"
+      ],
+      "secondary": [],
+      "equipamento": "Cabo",
+      "nivel": "Intermediário",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Preacher_Curl/0.jpg"
+  },
+  "rosca_martelo_cruzada": {
+      "nome": "Rosca Martelo Cruzada",
+      "grupo": "biceps",
+      "primary": [
+          "biceps"
+      ],
+      "secondary": [
+          "forearm"
+      ],
+      "equipamento": "Halteres",
+      "nivel": "Iniciante",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cross_Body_Hammer_Curl/0.jpg"
+  },
+  "rosca_maquina": {
+      "nome": "Rosca na Máquina",
+      "grupo": "biceps",
+      "primary": [
+          "biceps"
+      ],
+      "secondary": [],
+      "equipamento": "Máquina",
+      "nivel": "Iniciante",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Machine_Bicep_Curl/0.jpg"
+  },
+  "rosca_cabo_alto": {
+      "nome": "Rosca Cabo Alto (Pose de Bíceps)",
+      "grupo": "biceps",
+      "primary": [
+          "biceps"
+      ],
+      "secondary": [],
+      "equipamento": "Cabo",
+      "nivel": "Avançado",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/High_Cable_Curls/0.jpg"
+  },
+  "supino_fechado_halteres": {
+      "nome": "Supino Fechado com Halteres",
+      "grupo": "triceps",
+      "primary": [
+          "triceps"
+      ],
+      "secondary": [
+          "chest"
+      ],
+      "equipamento": "Halteres",
+      "nivel": "Intermediário",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Close-Grip_Dumbbell_Press/0.jpg"
+  },
+  "triceps_inclinado_cabo": {
+      "nome": "Tríceps Inclinado no Cabo",
+      "grupo": "triceps",
+      "primary": [
+          "triceps"
+      ],
+      "secondary": [],
+      "equipamento": "Cabo",
+      "nivel": "Intermediário",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Incline_Triceps_Extension/0.jpg"
+  },
+  "triceps_corda_acima_cabeca": {
+      "nome": "Tríceps Corda Acima da Cabeça",
+      "grupo": "triceps",
+      "primary": [
+          "triceps"
+      ],
+      "secondary": [],
+      "equipamento": "Cabo",
+      "nivel": "Iniciante",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Rope_Overhead_Triceps_Extension/0.jpg"
+  },
+  "triceps_testa_barra_w": {
+      "nome": "Tríceps Testa com Barra W",
+      "grupo": "triceps",
+      "primary": [
+          "triceps"
+      ],
+      "secondary": [],
+      "equipamento": "Barra W",
+      "nivel": "Intermediário",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/EZ-Bar_Skullcrusher/0.jpg"
+  },
+  "mergulho_triceps": {
+      "nome": "Mergulho para Tríceps (Dips)",
+      "grupo": "triceps",
+      "primary": [
+          "triceps"
+      ],
+      "secondary": [
+          "chest"
+      ],
+      "equipamento": "Peso corporal",
+      "nivel": "Intermediário",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dips_-_Triceps_Version/0.jpg"
+  },
+  "mergulho_maquina": {
+      "nome": "Mergulho na Máquina",
+      "grupo": "triceps",
+      "primary": [
+          "triceps"
+      ],
+      "secondary": [
+          "chest"
+      ],
+      "equipamento": "Máquina",
+      "nivel": "Iniciante",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dip_Machine/0.jpg"
+  },
+  "supino_chao_halteres": {
+      "nome": "Supino no Chão com Halteres (Tríceps)",
+      "grupo": "triceps",
+      "primary": [
+          "triceps"
+      ],
+      "secondary": [
+          "chest"
+      ],
+      "equipamento": "Halteres",
+      "nivel": "Iniciante",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Floor_Press/0.jpg"
+  },
+  "passada_caminhando_barra": {
+      "nome": "Passada Caminhando com Barra",
+      "grupo": "perna",
+      "primary": [
+          "quadriceps"
+      ],
+      "secondary": [
+          "gluteal"
+      ],
+      "equipamento": "Barra",
+      "nivel": "Intermediário",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Walking_Lunge/0.jpg"
+  },
+  "agachamento_peso_corporal": {
+      "nome": "Agachamento Livre (Peso Corporal)",
+      "grupo": "perna",
+      "primary": [
+          "quadriceps"
+      ],
+      "secondary": [
+          "gluteal"
+      ],
+      "equipamento": "Peso corporal",
+      "nivel": "Iniciante",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bodyweight_Squat/0.jpg"
+  },
+  "agachamento_caixa": {
+      "nome": "Agachamento na Caixa",
+      "grupo": "perna",
+      "primary": [
+          "quadriceps"
+      ],
+      "secondary": [
+          "gluteal"
+      ],
+      "equipamento": "Barra",
+      "nivel": "Intermediário",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Box_Squat/0.jpg"
+  },
+  "step_up_barra": {
+      "nome": "Step Up com Barra",
+      "grupo": "perna",
+      "primary": [
+          "quadriceps"
+      ],
+      "secondary": [
+          "gluteal"
+      ],
+      "equipamento": "Barra",
+      "nivel": "Intermediário",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Step_Ups/0.jpg"
+  },
+  "agachamento_hack_barra": {
+      "nome": "Agachamento Hack com Barra",
+      "grupo": "perna",
+      "primary": [
+          "quadriceps"
+      ],
+      "secondary": [
+          "gluteal"
+      ],
+      "equipamento": "Barra",
+      "nivel": "Avançado",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Hack_Squat/0.jpg"
+  },
+  "panturrilha_pe_barra": {
+      "nome": "Panturrilha em Pé com Barra",
+      "grupo": "perna",
+      "primary": [
+          "calves"
+      ],
+      "secondary": [],
+      "equipamento": "Barra",
+      "nivel": "Iniciante",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Barbell_Calf_Raise/0.jpg"
+  },
+  "panturrilha_smith": {
+      "nome": "Panturrilha no Smith",
+      "grupo": "perna",
+      "primary": [
+          "calves"
+      ],
+      "secondary": [],
+      "equipamento": "Smith",
+      "nivel": "Iniciante",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Calf_Raise/0.jpg"
+  },
+  "glute_ham_raise": {
+      "nome": "Glute Ham Raise (Mesa Romana)",
+      "grupo": "gluteo_posterior",
+      "primary": [
+          "hamstring"
+      ],
+      "secondary": [
+          "gluteal"
+      ],
+      "equipamento": "Máquina",
+      "nivel": "Intermediário",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Glute_Ham_Raise/0.jpg"
+  },
+  "elevacao_pelvica_barra_solo": {
+      "nome": "Elevação Pélvica com Barra (Solo)",
+      "grupo": "gluteo_posterior",
+      "primary": [
+          "gluteal"
+      ],
+      "secondary": [
+          "hamstring"
+      ],
+      "equipamento": "Barra",
+      "nivel": "Iniciante",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Glute_Bridge/0.jpg"
+  },
+  "elevacao_pelvica_unilateral": {
+      "nome": "Elevação Pélvica Unilateral",
+      "grupo": "gluteo_posterior",
+      "primary": [
+          "gluteal"
+      ],
+      "secondary": [],
+      "equipamento": "Peso corporal",
+      "nivel": "Iniciante",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Single_Leg_Glute_Bridge/0.jpg"
+  },
+  "pull_through_cabo": {
+      "nome": "Pull Through no Cabo",
+      "grupo": "gluteo_posterior",
+      "primary": [
+          "gluteal"
+      ],
+      "secondary": [
+          "hamstring"
+      ],
+      "equipamento": "Cabo",
+      "nivel": "Intermediário",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pull_Through/0.jpg"
+  },
+  "panturrilha_burrinho": {
+      "nome": "Panturrilha Burrinho",
+      "grupo": "gluteo_posterior",
+      "primary": [
+          "calves"
+      ],
+      "secondary": [],
+      "equipamento": "Máquina",
+      "nivel": "Intermediário",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Donkey_Calf_Raises/0.jpg"
+  },
+  "gluteo_unilateral_cabo": {
+      "nome": "Glúteo Unilateral no Cabo (Coice)",
+      "grupo": "gluteo_posterior",
+      "primary": [
+          "gluteal"
+      ],
+      "secondary": [],
+      "equipamento": "Cabo",
+      "nivel": "Iniciante",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One-Legged_Cable_Kickback/0.jpg"
+  },
+  "bom_dia_rack": {
+      "nome": "Bom Dia com Barra no Rack",
+      "grupo": "gluteo_posterior",
+      "primary": [
+          "hamstring"
+      ],
+      "secondary": [
+          "lower-back",
+          "gluteal"
+      ],
+      "equipamento": "Barra",
+      "nivel": "Avançado",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Good_Morning_off_Pins/0.jpg"
+  },
+  "abdominal_declinado": {
+      "nome": "Abdominal Declinado",
+      "grupo": "abdomen",
+      "primary": [
+          "abs"
+      ],
+      "secondary": [],
+      "equipamento": "Peso corporal",
+      "nivel": "Intermediário",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Decline_Crunch/0.jpg"
+  },
+  "abdominal_reverso_cabo": {
+      "nome": "Abdominal Reverso no Cabo",
+      "grupo": "abdomen",
+      "primary": [
+          "abs"
+      ],
+      "secondary": [],
+      "equipamento": "Cabo",
+      "nivel": "Intermediário",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Reverse_Crunch/0.jpg"
+  },
+  "russian_twist_cabo": {
+      "nome": "Russian Twist no Cabo",
+      "grupo": "abdomen",
+      "primary": [
+          "obliques"
+      ],
+      "secondary": [],
+      "equipamento": "Cabo",
+      "nivel": "Intermediário",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Russian_Twists/0.jpg"
+  },
+  "rollout_barra": {
+      "nome": "Rollout com Barra",
+      "grupo": "abdomen",
+      "primary": [
+          "abs"
+      ],
+      "secondary": [],
+      "equipamento": "Barra",
+      "nivel": "Avançado",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Ab_Rollout/0.jpg"
+  },
+  "dead_bug": {
+      "nome": "Dead Bug",
+      "grupo": "abdomen",
+      "primary": [
+          "abs"
+      ],
+      "secondary": [],
+      "equipamento": "Peso corporal",
+      "nivel": "Iniciante",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dead_Bug/0.jpg"
+  },
+  "abdominal_butt_up": {
+      "nome": "Abdominal Butt-Up",
+      "grupo": "abdomen",
+      "primary": [
+          "abs"
+      ],
+      "secondary": [],
+      "equipamento": "Peso corporal",
+      "nivel": "Intermediário",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Butt-Ups/0.jpg"
+  },
+  "flexao_lateral_barra": {
+      "nome": "Flexão Lateral com Barra",
+      "grupo": "abdomen",
+      "primary": [
+          "obliques"
+      ],
+      "secondary": [],
+      "equipamento": "Barra",
+      "nivel": "Iniciante",
+      "imagem": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Side_Bend/0.jpg"
   }
 };
