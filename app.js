@@ -552,7 +552,7 @@ function renderTodayWorkout() {
     if (titleEl) titleEl.textContent = "Sem treinos para hoje";
     container.innerHTML = `
       <div class="ficha-card rounded-2xl p-6 flex flex-col items-center text-center gap-3">
-        <div class="w-11 h-11 rounded-full flex items-center justify-center text-muted flex-shrink-0" style="background:#1C1C1E;">
+        <div class="w-11 h-11 rounded-full flex items-center justify-center text-muted flex-shrink-0" style="background:#242428;">
           <i data-lucide="calendar-x"></i>
         </div>
         <p class="text-sm text-gray-400">Nenhum treino programado pra hoje no menu Treinos.</p>
@@ -640,7 +640,7 @@ function renderTodayWorkout() {
               <h3 class="text-lg font-extrabold text-white uppercase tracking-tight">${t.nome}</h3>
               ${emAndamento ? `<p class="text-[11px] text-gray-500 mt-0.5">Exercício ${p.execucao.exercicioIndex + 1} de ${t.exercicios.length}</p>` : ""}
             </div>
-            <div class="w-10 h-10 rounded-xl flex items-center justify-center text-clay flex-shrink-0" style="background:#1C1C1E;">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center text-clay flex-shrink-0" style="background:#242428;">
               <i data-lucide="dumbbell"></i>
             </div>
           </div>
@@ -899,19 +899,19 @@ function buildExerciseCard(t, id, ex, cfg) {
     panel.innerHTML = `
       <div class="flex items-center gap-2">
         <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Séries</span>
-        <button type="button" class="cfg-series-dir w-6 h-6 rounded-full bg-[#1C1C1E] border border-hairline text-white flex items-center justify-center text-xs" data-dir="-1">−</button>
+        <button type="button" class="cfg-series-dir w-6 h-6 rounded-full bg-[#242428] border border-hairline text-white flex items-center justify-center text-xs" data-dir="-1">−</button>
         <span class="w-4 text-center text-sm font-extrabold text-white cfg-series-val">${cfg.series}</span>
-        <button type="button" class="cfg-series-dir w-6 h-6 rounded-full bg-[#1C1C1E] border border-hairline text-white flex items-center justify-center text-xs" data-dir="1">+</button>
+        <button type="button" class="cfg-series-dir w-6 h-6 rounded-full bg-[#242428] border border-hairline text-white flex items-center justify-center text-xs" data-dir="1">+</button>
       </div>
       <div class="flex items-center gap-2">
         <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Reps</span>
-        <input type="text" class="cfg-reps-input w-20 bg-[#1C1C1E] border border-hairline rounded-md px-2 py-1 text-center text-sm font-extrabold text-white outline-none focus:border-clay" value="${repsToInputValue(cfg.reps)}" placeholder="10 ou 12+10+8">
+        <input type="text" class="cfg-reps-input w-20 bg-[#242428] border border-hairline rounded-md px-2 py-1 text-center text-sm font-extrabold text-white outline-none focus:border-clay" value="${repsToInputValue(cfg.reps)}" placeholder="10 ou 12+10+8">
       </div>
       <div class="flex items-center gap-2">
         <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Descanso</span>
-        <button type="button" class="cfg-rest-dir w-6 h-6 rounded-full bg-[#1C1C1E] border border-hairline text-white flex items-center justify-center text-xs" data-dir="-1">−</button>
+        <button type="button" class="cfg-rest-dir w-6 h-6 rounded-full bg-[#242428] border border-hairline text-white flex items-center justify-center text-xs" data-dir="-1">−</button>
         <span class="w-9 text-center text-sm font-extrabold text-white cfg-rest-val">${cfg.descanso}s</span>
-        <button type="button" class="cfg-rest-dir w-6 h-6 rounded-full bg-[#1C1C1E] border border-hairline text-white flex items-center justify-center text-xs" data-dir="1">+</button>
+        <button type="button" class="cfg-rest-dir w-6 h-6 rounded-full bg-[#242428] border border-hairline text-white flex items-center justify-center text-xs" data-dir="1">+</button>
       </div>
     `;
 
@@ -1187,8 +1187,8 @@ function renderExecSeries() {
       ${pesos.map((peso, i) => {
         const mostrarInput = peso == null || execEditingSeries.has(i);
         return mostrarInput
-          ? `<input type="number" inputmode="decimal" step="0.5" class="serie-peso-input w-full bg-[#1C1C1E] border border-hairline rounded-xl py-2 text-center text-white font-bold outline-none focus:border-clay" placeholder="Ex.: 40" value="${peso != null ? peso : ""}" data-idx="${i}">`
-          : `<button type="button" class="serie-peso-display w-full bg-[#1C1C1E] border border-clay rounded-xl py-2 text-center active:scale-[0.97] transition-all flex items-center justify-center gap-1" data-idx="${i}">
+          ? `<input type="number" inputmode="decimal" step="0.5" class="serie-peso-input w-full bg-[#242428] border border-hairline rounded-xl py-2 text-center text-white font-bold outline-none focus:border-clay" placeholder="Ex.: 40" value="${peso != null ? peso : ""}" data-idx="${i}">`
+          : `<button type="button" class="serie-peso-display w-full bg-[#242428] border border-clay rounded-xl py-2 text-center active:scale-[0.97] transition-all flex items-center justify-center gap-1" data-idx="${i}">
                <i data-lucide="check" class="text-clay" style="width:11px;height:11px;"></i>
                <span class="text-sm font-extrabold text-white">${peso}</span><span class="text-[10px] text-gray-500">kg</span>
              </button>`;
@@ -1491,7 +1491,7 @@ function renderCalendario() {
     const cell = document.createElement("button");
     cell.textContent = day;
     cell.className = "cal-day text-center py-3 text-xs font-medium rounded-full relative transition-all " +
-      (isSelected ? "bg-[#1C1C1E] border border-clay text-white scale-110 shadow-lg shadow-black/40" :
+      (isSelected ? "bg-[#242428] border border-clay text-white scale-110 shadow-lg shadow-black/40" :
        isToday ? "font-bold bg-clay text-white shadow-lg shadow-clay/20" :
        trained ? "bg-clay/5 text-clay" : "text-ink hover:bg-hairline/40");
     if (trained && !isSelected) {

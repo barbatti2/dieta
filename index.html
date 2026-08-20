@@ -19,13 +19,13 @@
           },
           colors: {
             paper: '#0A0A0B',
-            card: '#141416',
+            card: '#1B1B1E',
             ink: '#F5F4F2',
             muted: '#8D8D92',
             clay: '#C9482F',
             claySoft: '#6B3527',
             emerald: '#4CAF7D',
-            hairline: '#232326',
+            hairline: '#2B2B2F',
           }
         }
       }
@@ -54,7 +54,7 @@
     .screen { display: none; }
     .screen.active { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
     .profile-btn { background: #000; transition: all .15s; }
-    .profile-btn.active { background: #C9482F; box-shadow: 0 0 0 2px #C9482F, 0 0 0 4px #141416; }
+    .profile-btn.active { background: #C9482F; box-shadow: 0 0 0 2px #C9482F, 0 0 0 4px #1B1B1E; }
     .toast { position: absolute; left: 50%; bottom: 96px; transform: translateX(-50%) translateY(8px); opacity: 0; pointer-events: none; transition: all .25s ease; z-index: 60; }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     .weekday-btn { opacity: .5; }
@@ -74,16 +74,16 @@
     .nav-item-active .nav-label { max-width: 100px; opacity: 1; margin-left: 0.375rem; }
 
     /* ===== tema escuro (o menu inferior segue este mesmo padrão) ===== */
-    .profile-toggle { background: #141416; border-color: #232326; }
-    .weekday-pill { background: #1C1C1E; }
+    .profile-toggle { background: #1B1B1E; border-color: #2B2B2F; }
+    .weekday-pill { background: #242428; }
     .weekday-pill.trained {
       background: linear-gradient(180deg, #FF6B3D, #C9482F);
       box-shadow: 0 6px 16px -4px rgba(201,72,47,.55);
     }
     /* dia de hoje que AINDA não foi treinado: contorno, não preenchido —
        pra não parecer "concluído" antes da hora */
-    .weekday-pill.today-pending { background: #1C1C1E; border: 2px solid #C9482F; }
-    .ficha-card { background: #141416; border: 1px solid #232326; }
+    .weekday-pill.today-pending { background: #242428; border: 2px solid #C9482F; }
+    .ficha-card { background: #1B1B1E; border: 1px solid #2B2B2F; }
     .ficha-card:active { border-color: #C9482F; }
   </style>
 </head>
@@ -92,7 +92,7 @@
   <div class="app-container w-full max-w-[375px] mx-auto sm:h-[780px] bg-paper relative flex flex-col sm:rounded-[2.5rem] sm:shadow-2xl sm:shadow-black/40 overflow-hidden">
 
     <!-- toast de confirmação -->
-    <div id="toast" class="toast bg-[#1C1C1E] border border-[#2A2A2C] text-white text-xs font-bold px-4 py-2.5 rounded-full shadow-lg"></div>
+    <div id="toast" class="toast bg-[#242428] border border-[#333338] text-white text-xs font-bold px-4 py-2.5 rounded-full shadow-lg"></div>
 
     <!-- tela de login (senha única do app) -->
     <div id="loginScreen" class="absolute inset-0 z-[1000] flex-col" style="background:#0A0A0B; display:none;">
@@ -114,7 +114,7 @@
             <div class="relative">
               <i data-lucide="lock" class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-base pointer-events-none"></i>
               <input id="loginPassword" type="password" placeholder="Senha" autocomplete="current-password"
-                class="w-full bg-[#141416] border border-hairline rounded-2xl pl-11 pr-11 py-3.5 text-center text-white font-semibold tracking-wide outline-none focus:border-clay" />
+                class="w-full bg-[#1B1B1E] border border-hairline rounded-2xl pl-11 pr-11 py-3.5 text-center text-white font-semibold tracking-wide outline-none focus:border-clay" />
               <button type="button" id="togglePasswordBtn" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white">
                 <i data-lucide="eye" class="text-base"></i>
               </button>
@@ -163,7 +163,7 @@
           <button class="profile-btn w-8 h-8 rounded-full overflow-hidden flex items-center justify-center" data-profile="parceira">
             <span class="text-white text-xs font-bold">R</span>
           </button>
-          <button class="logout-btn w-7 h-7 rounded-full flex items-center justify-center text-gray-500 hover:text-clay flex-shrink-0 ml-0.5 border-l border-[#2A2A2C] pl-1.5">
+          <button class="logout-btn w-7 h-7 rounded-full flex items-center justify-center text-gray-500 hover:text-clay flex-shrink-0 ml-0.5 border-l border-[#333338] pl-1.5">
             <i data-lucide="log-out" class="text-xs"></i>
           </button>
         </div>
@@ -206,7 +206,7 @@
           <button class="profile-btn w-8 h-8 rounded-full overflow-hidden flex items-center justify-center" data-profile="parceira">
             <span class="text-white text-xs font-bold">R</span>
           </button>
-          <button class="logout-btn w-7 h-7 rounded-full flex items-center justify-center text-gray-500 hover:text-clay flex-shrink-0 ml-0.5 border-l border-[#2A2A2C] pl-1.5">
+          <button class="logout-btn w-7 h-7 rounded-full flex items-center justify-center text-gray-500 hover:text-clay flex-shrink-0 ml-0.5 border-l border-[#333338] pl-1.5">
             <i data-lucide="log-out" class="text-xs"></i>
           </button>
         </div>
@@ -275,7 +275,7 @@
         </div>
 
         <section class="flex items-center gap-3">
-          <div class="flex-1 bg-[#1C1C1E] border border-hairline rounded-xl px-4 py-3 min-w-0">
+          <div class="flex-1 bg-[#242428] border border-hairline rounded-xl px-4 py-3 min-w-0">
             <p class="text-[10px] font-bold uppercase tracking-widest leading-tight"><span class="text-clay">Foco</span> <span class="text-white">Muscular</span></p>
             <p class="text-sm font-bold text-white truncate" id="execFocus">Quadríceps, Glúteo</p>
           </div>
@@ -368,7 +368,7 @@
           <button class="profile-btn w-8 h-8 rounded-full overflow-hidden flex items-center justify-center" data-profile="parceira">
             <span class="text-white text-xs font-bold">R</span>
           </button>
-          <button class="logout-btn w-7 h-7 rounded-full flex items-center justify-center text-gray-500 hover:text-clay flex-shrink-0 ml-0.5 border-l border-[#2A2A2C] pl-1.5">
+          <button class="logout-btn w-7 h-7 rounded-full flex items-center justify-center text-gray-500 hover:text-clay flex-shrink-0 ml-0.5 border-l border-[#333338] pl-1.5">
             <i data-lucide="log-out" class="text-xs"></i>
           </button>
         </div>
@@ -390,7 +390,7 @@
           <button class="profile-btn w-8 h-8 rounded-full overflow-hidden flex items-center justify-center" data-profile="parceira">
             <span class="text-white text-xs font-bold">R</span>
           </button>
-          <button class="logout-btn w-7 h-7 rounded-full flex items-center justify-center text-gray-500 hover:text-clay flex-shrink-0 ml-0.5 border-l border-[#2A2A2C] pl-1.5">
+          <button class="logout-btn w-7 h-7 rounded-full flex items-center justify-center text-gray-500 hover:text-clay flex-shrink-0 ml-0.5 border-l border-[#333338] pl-1.5">
             <i data-lucide="log-out" class="text-xs"></i>
           </button>
         </div>
@@ -437,7 +437,7 @@
     </section>
 
     <!-- ===================== BOTTOM NAV (único, compartilhado) ===================== -->
-    <nav id="bottomNav" class="flex-shrink-0 backdrop-blur-xl border-t px-3 pt-3 pb-8 flex justify-around items-center z-50" style="background:rgba(10,10,11,.92); border-color:#232326;">
+    <nav id="bottomNav" class="flex-shrink-0 backdrop-blur-xl border-t px-3 pt-3 pb-8 flex justify-around items-center z-50" style="background:rgba(10,10,11,.92); border-color:#2B2B2F;">
       <button class="nav-item nav-item-active flex items-center justify-center rounded-full px-3 py-2.5 text-clay bg-clay/10 transition-all duration-300 ease-out" data-nav="hoje">
         <i data-lucide="house" class="text-xl flex-shrink-0"></i>
         <span class="nav-label text-[11px] font-bold uppercase tracking-widest overflow-hidden whitespace-nowrap transition-all duration-300 ease-out">Hoje</span>
