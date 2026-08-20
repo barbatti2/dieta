@@ -781,6 +781,7 @@ function renderTemplateList() {
    ========================================================= */
 
 let editorTemplateId = null;
+let editorExpandedGroups = new Set();
 
 function openEditor(templateId) {
   editorTemplateId = templateId;
@@ -790,6 +791,15 @@ function openEditor(templateId) {
   input.value = t.nome;
   input.oninput = () => { t.nome = input.value; };
   renderEditorWeekdays();
+
+  // categorias começam recolhidas — só abrem automaticamente aquelas que já
+  // têm exercício incluído, pra facilitar ver o que já está montado na ficha
+  editorExpandedGroups = new Set(
+    GROUPS
+      .filter(group => t.exercicios.some(cfg => EXERCISES[cfg.id]?.grupo === group.id))
+      .map(group => group.id)
+  );
+
   renderEditorList();
   showScreen("editor");
 }
@@ -840,10 +850,30 @@ function renderEditorList() {
     const idsDoGrupo = Object.entries(EXERCISES).filter(([, ex]) => ex.grupo === group.id);
     if (idsDoGrupo.length === 0) return;
 
-    const header = document.createElement("p");
-    header.className = "text-[10px] font-bold text-muted uppercase tracking-[0.2em] px-2 pt-4 pb-1 first:pt-0";
-    header.textContent = group.nome;
+    const includedCount = idsDoGrupo.filter(([id]) => t.exercicios.some(e => e.id === id)).length;
+    const expanded = editorExpandedGroups.has(group.id);
+
+    // cabeçalho da categoria vira um botão de acordeão: recolhido por padrão,
+    // mostra quantos exercícios já estão incluídos e some com os cards até
+    // o usuário tocar pra expandir
+    const header = document.createElement("button");
+    header.type = "button";
+    header.className = "w-full flex items-center justify-between gap-2 px-2 pt-4 pb-1 first:pt-0";
+    header.innerHTML = `
+      <span class="flex items-center gap-2">
+        <span class="text-[10px] font-bold text-muted uppercase tracking-[0.2em]">${group.nome}</span>
+        ${includedCount > 0 ? `<span class="text-[9px] font-bold text-clay bg-claySoft/10 border border-clay/30 rounded-full px-2 py-0.5">${includedCount}</span>` : ""}
+      </span>
+      <i data-lucide="chevron-down" class="text-muted text-sm transition-transform ${expanded ? "rotate-180" : ""}"></i>
+    `;
+    header.addEventListener("click", () => {
+      if (editorExpandedGroups.has(group.id)) editorExpandedGroups.delete(group.id);
+      else editorExpandedGroups.add(group.id);
+      renderEditorList();
+    });
     list.appendChild(header);
+
+    if (!expanded) return;
 
     idsDoGrupo.forEach(([id, ex]) => {
       const cfg = t.exercicios.find(e => e.id === id);
