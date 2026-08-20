@@ -833,10 +833,10 @@ function createNewTemplate() {
     ficha: "Ficha " + nextLetter,
     tags: [],
     dias: [],
-    exercicios: []
+    exercicios: [],
+    _unsaved: true // ainda não foi salvo no Firestore — só grava quando tocar em "Salvar treino"
   };
   treinosDoPerfilAtual().push(novo);
-  saveTemplate(state.perfilAtual, novo);
   openEditor(novo.id);
 }
 document.getElementById("createTemplateBtn").addEventListener("click", createNewTemplate);
@@ -974,13 +974,19 @@ function renderEditorList() {
 
 document.getElementById("editorBackBtn").addEventListener("click", () => {
   const t = treinosDoPerfilAtual().find(x => x.id === editorTemplateId);
-  if (t) saveTemplate(state.perfilAtual, t);
+  // se a ficha foi criada agora e nunca foi salva, sair sem salvar descarta
+  // ela por completo — não deixa um rascunho fantasma na lista
+  if (t && t._unsaved) {
+    const idx = treinosDoPerfilAtual().findIndex(x => x.id === editorTemplateId);
+    if (idx >= 0) treinosDoPerfilAtual().splice(idx, 1);
+  }
   renderTemplateList();
   renderHoje();
   showScreen("treinos");
 });
 document.getElementById("editorSaveBtn").addEventListener("click", () => {
   const t = treinosDoPerfilAtual().find(x => x.id === editorTemplateId);
+  delete t._unsaved;
   renderTemplateList();
   renderHoje();
   showToast("Treino salvo!");
